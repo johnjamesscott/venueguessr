@@ -1,8 +1,18 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { VENUES } from '@/data/venues';
+import { VENUES_BY_LEVEL } from '@/data/venues';
 import { calculateDistance, shuffleArray } from '@/utils/distance';
 import { calculateScore } from '@/utils/scoring';
 import { base44 } from '@/api/base44Client';
+import {
+  unlockAudio,
+  startTensionMusic,
+  stopTensionMusic,
+  playPinSound,
+  playLockSound,
+  playCelebrationSound,
+  playErrorSound,
+} from '@/utils/sounds';
+
 import SplashScreen from '@/components/game/SplashScreen';
 import GameHeader from '@/components/game/GameHeader';
 import MatterportViewer from '@/components/game/MatterportViewer';
@@ -12,9 +22,11 @@ import RoundResult from '@/components/game/RoundResult';
 import ContactForm from '@/components/game/ContactForm';
 import GameSummary from '@/components/game/GameSummary';
 import PreRoundCountdown from '@/components/game/PreRoundCountdown';
+import CelebrationOverlay from '@/components/game/CelebrationOverlay';
 
 const ROUND_SECONDS = 30;
 const TOTAL_ROUNDS = 3;
+const GOOD_SCORE_THRESHOLD = 2000; // score >= this triggers celebration
 
 const GAME_STATES = {
   SPLASH: 'splash',
@@ -26,6 +38,7 @@ const GAME_STATES = {
 
 export default function Game() {
   const [gameState, setGameState] = useState(GAME_STATES.SPLASH);
+  const [selectedLevel, setSelectedLevel] = useState(1);
   const [shuffledVenues, setShuffledVenues] = useState([]);
   const [currentRoundIndex, setCurrentRoundIndex] = useState(0);
   const [currentGuess, setCurrentGuess] = useState(null);
@@ -36,12 +49,21 @@ export default function Game() {
   const [preRoundCountdown, setPreRoundCountdown] = useState(false);
   const [currentScore, setCurrentScore] = useState(0);
   const [playerEmail, setPlayerEmail] = useState(null);
-
-  // Keep a pool of extra venues to swap in if a tour errors
   const [venuePool, setVenuePool] = useState([]);
+  const [showCelebration, setShowCelebration] = useState(false);
 
-  const startGame = useCallback(() => {
-    const shuffled = shuffleArray(VENUES);
+  // Stop music when leaving playing state
+  useEffect(() => {
+    if (gameState !== GAME_STATES.PLAYING) {
+      stopTensionMusic();
+    }
+  }, [gameState]);
+
+  const startGame = useCallback((levelId = 1) => {
+    unlockAudio();
+    setSelectedLevel(levelId);
+    const venues = VENUES_BY_LEVEL[levelId] || VENUES_BY_LEVEL[1];
+    const shuffled = shuffleArray(venues);
     setShuffledVenues(shuffled.slice(0, TOTAL_ROUNDS));
     setVenuePool(shuffled.slice(TOTAL_ROUNDS));
     setCurrentRoundIndex(0);
@@ -52,10 +74,10 @@ export default function Game() {
     setCurrentScore(0);
     setTimerActive(false);
     setPreRoundCountdown(true);
+    setShowCelebration(false);
     setGameState(GAME_STATES.PLAYING);
   }, []);
 
-  // Swap out the current errored venue for the next one in the pool
   const handleTourError = useCallback(() => {
     setVenuePool(pool => {
       if (pool.length === 0) return pool;
@@ -72,6 +94,7 @@ export default function Game() {
   const handlePreRoundComplete = useCallback(() => {
     setPreRoundCountdown(false);
     setTimerActive(true);
+    startTensionMusic();
   }, []);
 
   const lockGuess = useCallback((guess) => {
@@ -81,6 +104,19 @@ export default function Game() {
       ? calculateDistance(guess.lat, guess.lng, venue.lat, venue.lng)
       : null;
     const score = dist ? calculateScore(dist.km) : 0;
+
+    stopTensionMusic();
+    playLockSound();
+
+    // Celebration or error sound based on score
+    if (score >= GOOD_SCORE_THRESHOLD) {
+      playCelebrationSound();
+      setShowCelebration(true);
+      setTimeout(() => setShowCelebration(false), 3000);
+    } else {
+      playErrorSound();
+    }
+
     setCurrentGuess(guess);
     setCurrentDistance(dist);
     setCurrentScore(score);
@@ -90,12 +126,11 @@ export default function Game() {
   }, [guessLocked, shuffledVenues, currentRoundIndex]);
 
   const handleTimerExpire = useCallback(() => {
-    if (!guessLocked) {
-      lockGuess(currentGuess);
-    }
+    if (!guessLocked) lockGuess(currentGuess);
   }, [guessLocked, lockGuess, currentGuess]);
 
   const handleGuessPlaced = useCallback((latlng) => {
+    playPinSound();
     setCurrentGuess({ lat: latlng.lat, lng: latlng.lng });
   }, []);
 
@@ -107,7 +142,6 @@ export default function Game() {
       distance: currentDistance,
       score: currentScore,
     }]);
-
     const isLastRound = currentRoundIndex >= shuffledVenues.length - 1;
     if (isLastRound) {
       setGameState(GAME_STATES.CONTACT);
@@ -121,16 +155,15 @@ export default function Game() {
       setPreRoundCountdown(true);
       setGameState(GAME_STATES.PLAYING);
     }
-  }, [currentRoundIndex, shuffledVenues, currentGuess, currentDistance]);
+  }, [currentRoundIndex, shuffledVenues, currentGuess, currentDistance, currentScore]);
 
   const saveToLeaderboard = useCallback(async (formData, finalResults) => {
     const total = finalResults.reduce((sum, r) => sum + (r.score || 0), 0);
-    const avgKm = finalResults.filter(r => r.distance).length > 0
-      ? finalResults.reduce((sum, r) => sum + (r.distance?.km || 0), 0) / finalResults.filter(r => r.distance).length
+    const withDist = finalResults.filter(r => r.distance);
+    const avgKm = withDist.length > 0
+      ? withDist.reduce((sum, r) => sum + (r.distance?.km || 0), 0) / withDist.length
       : 0;
-    const name = formData
-      ? `${formData.firstName} ${formData.lastName}`.trim()
-      : 'Anonymous';
+    const name = formData ? `${formData.firstName} ${formData.lastName}`.trim() : 'Anonymous';
     await base44.entities.LeaderboardEntry.create({
       player_name: name,
       email: formData?.email || '',
@@ -159,12 +192,10 @@ export default function Game() {
   const currentVenue = shuffledVenues[currentRoundIndex];
   const isLastRound = currentRoundIndex >= shuffledVenues.length - 1;
 
-  // SPLASH
   if (gameState === GAME_STATES.SPLASH) {
-    return <SplashScreen totalRounds={TOTAL_ROUNDS} onStart={startGame} />;
+    return <SplashScreen onStart={startGame} />;
   }
 
-  // SUMMARY
   if (gameState === GAME_STATES.SUMMARY) {
     const totalScore = results.reduce((sum, r) => sum + (r.score || 0), 0);
     return (
@@ -173,12 +204,11 @@ export default function Game() {
         venues={shuffledVenues}
         totalScore={totalScore}
         playerEmail={playerEmail}
-        onPlayAgain={startGame}
+        onPlayAgain={() => setGameState(GAME_STATES.SPLASH)}
       />
     );
   }
 
-  // CONTACT (shown after last round, before summary)
   if (gameState === GAME_STATES.CONTACT) {
     return (
       <div className="min-h-screen bg-hb-bg">
@@ -190,13 +220,13 @@ export default function Game() {
 
   return (
     <div className="min-h-screen bg-hb-bg flex flex-col">
-      {/* PLAYING state — tour is full bleed behind the nav */}
+      <CelebrationOverlay active={showCelebration} />
+
+      {/* PLAYING */}
       {gameState === GAME_STATES.PLAYING && currentVenue && (
         <div className="flex flex-col" style={{ minHeight: '100dvh' }}>
-          {/* Tour takes full screen with nav overlaid on top */}
           <div className="relative" style={{ height: '52vh', minHeight: '300px' }}>
             <MatterportViewer tourUrl={currentVenue.tourUrl} onError={handleTourError} />
-            {/* Nav overlay — sits on top of the tour */}
             <div className="absolute top-0 left-0 right-0 z-30">
               <GameHeader currentRound={currentRoundIndex + 1} totalRounds={shuffledVenues.length} overlay />
             </div>
@@ -211,11 +241,11 @@ export default function Game() {
             )}
           </div>
 
-          {/* Map section */}
           <div className="flex flex-col p-3 md:p-4 gap-3">
             <GuessMap
               onGuessPlaced={handleGuessPlaced}
               guessLocked={guessLocked}
+              currentGuess={currentGuess}
             />
             {currentGuess && !guessLocked && (
               <button
@@ -229,7 +259,7 @@ export default function Game() {
         </div>
       )}
 
-      {/* ROUND RESULT state — normal header */}
+      {/* ROUND RESULT */}
       {gameState === GAME_STATES.ROUND_RESULT && currentVenue && (
         <>
           <GameHeader currentRound={currentRoundIndex + 1} totalRounds={shuffledVenues.length} />

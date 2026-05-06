@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -45,8 +45,13 @@ function ClickHandler({ onMapClick }) {
   return null;
 }
 
-export default function GuessMap({ onGuessPlaced, guessLocked }) {
+export default function GuessMap({ onGuessPlaced, guessLocked, currentGuess }) {
   const [markerPos, setMarkerPos] = useState(null);
+
+  // Sync external reset (new round)
+  React.useEffect(() => {
+    if (!currentGuess) setMarkerPos(null);
+  }, [currentGuess]);
 
   const handleMapClick = useCallback((latlng) => {
     if (guessLocked) return;
@@ -74,7 +79,7 @@ export default function GuessMap({ onGuessPlaced, guessLocked }) {
         {markerPos && <Marker position={markerPos} icon={hbIcon} />}
       </MapContainer>
 
-      {/* Tooltip — shown until a pin is placed */}
+      {/* Tooltip */}
       {!markerPos && !guessLocked && (
         <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-[1000] pointer-events-none">
           <div className="flex items-center gap-2 bg-white/95 text-gray-700 text-xs font-semibold px-3.5 py-2 rounded-full shadow-lg border border-gray-200">
@@ -82,7 +87,7 @@ export default function GuessMap({ onGuessPlaced, guessLocked }) {
               <path d="M16 0C7.163 0 0 7.163 0 16c0 10 16 26 16 26s16-16 16-26C32 7.163 24.837 0 16 0z" fill="#AF231C"/>
               <circle cx="16" cy="15" r="5.5" fill="white"/>
             </svg>
-            Click the map to place your guess
+            Click anywhere to place your pin
           </div>
         </div>
       )}
