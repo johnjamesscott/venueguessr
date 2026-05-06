@@ -2,11 +2,11 @@ import React from 'react';
 
 export default function GameHeader() {
   return (
-    <header className="flex items-center justify-between bg-white shadow-sm" style={{ padding: '10px 12px' }}>
+    <header className="flex items-center justify-between bg-white shadow-sm" style={{ padding: '12px 16px', borderRadius: '8px' }}>
       <img
         src="https://cdn.prod.website-files.com/63bd498079b1380a81c6e13b/63bd498079b1384ca2c6e19d_HeadBox-Logo-Brick-header.png"
         alt="HeadBox"
-        className="h-7 md:h-8 object-contain"
+        className="h-9 md:h-10 object-contain"
       />
       <div className="flex items-center gap-2">
         <a

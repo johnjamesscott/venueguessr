@@ -5,8 +5,6 @@ import { calculateScore } from '@/utils/scoring';
 import { base44 } from '@/api/base44Client';
 import {
   unlockAudio,
-  startTensionMusic,
-  stopTensionMusic,
   playPinSound,
   playLockSound,
   playCelebrationSound,
@@ -52,12 +50,7 @@ export default function Game() {
   const [venuePool, setVenuePool] = useState([]);
   const [showCelebration, setShowCelebration] = useState(false);
 
-  // Stop music when leaving playing state
-  useEffect(() => {
-    if (gameState !== GAME_STATES.PLAYING) {
-      stopTensionMusic();
-    }
-  }, [gameState]);
+
 
   const startGame = useCallback((levelId = 1) => {
     unlockAudio();
@@ -94,7 +87,6 @@ export default function Game() {
   const handlePreRoundComplete = useCallback(() => {
     setPreRoundCountdown(false);
     setTimerActive(true);
-    startTensionMusic();
   }, []);
 
   const lockGuess = useCallback((guess) => {
@@ -105,7 +97,6 @@ export default function Game() {
       : null;
     const score = dist ? calculateScore(dist.km) : 0;
 
-    stopTensionMusic();
     playLockSound();
 
     // Celebration or error sound based on score
