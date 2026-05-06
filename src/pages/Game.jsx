@@ -240,6 +240,8 @@ export default function Game() {
                 currentGuess={currentGuess}
                 onLockGuess={() => lockGuess(currentGuess)}
                 fill
+                mapCenter={selectedLevel === 1 ? [54.5, -3.5] : undefined}
+                mapZoom={selectedLevel === 1 ? 5 : undefined}
               />
             </div>
 

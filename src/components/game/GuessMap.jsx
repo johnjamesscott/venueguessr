@@ -34,7 +34,7 @@ function ClickHandler({ onMapClick }) {
 }
 
 // The map fills its container — height is controlled by the parent
-export default function GuessMap({ onGuessPlaced, guessLocked, currentGuess, onLockGuess, height, fill }) {
+export default function GuessMap({ onGuessPlaced, guessLocked, currentGuess, onLockGuess, height, fill, mapCenter, mapZoom }) {
   const [markerPos, setMarkerPos] = useState(null);
 
   useEffect(() => {
@@ -54,8 +54,8 @@ export default function GuessMap({ onGuessPlaced, guessLocked, currentGuess, onL
   return (
     <div className="relative w-full overflow-hidden" style={containerStyle}>
       <MapContainer
-        center={[20, 0]}
-        zoom={2}
+        center={mapCenter || [20, 0]}
+        zoom={mapZoom || 2}
         style={{ width: '100%', height: '100%', background: '#e8e8e8' }}
         zoomControl={true}
         attributionControl={false}
