@@ -13,12 +13,19 @@ export default function MatterportViewer({ tourUrl }) {
   }
 
   return (
-    <iframe
-      src={embedUrl}
-      className="w-full h-full border-0"
-      allow="xr-spatial-tracking; gyroscope; accelerometer; fullscreen"
-      allowFullScreen
-      title="Venue 3D Tour"
-    />
+    <div className="relative w-full h-full">
+      <iframe
+        src={embedUrl}
+        className="w-full h-full border-0"
+        allow="xr-spatial-tracking; gyroscope; accelerometer; fullscreen"
+        allowFullScreen
+        title="Venue 3D Tour"
+      />
+      {/* Cover the Matterport venue name shown top-left */}
+      <div
+        className="absolute top-0 left-0 z-10 pointer-events-none"
+        style={{ width: '280px', height: '56px', background: '#121212' }}
+      />
+    </div>
   );
 }

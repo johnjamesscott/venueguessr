@@ -9,8 +9,10 @@ import GuessMap from '@/components/game/GuessMap';
 import RoundResult from '@/components/game/RoundResult';
 import ContactForm from '@/components/game/ContactForm';
 import GameSummary from '@/components/game/GameSummary';
+import PreRoundCountdown from '@/components/game/PreRoundCountdown';
 
 const ROUND_SECONDS = 30;
+const TOTAL_ROUNDS = 3;
 
 const GAME_STATES = {
   SPLASH: 'splash',
@@ -29,17 +31,24 @@ export default function Game() {
   const [timerActive, setTimerActive] = useState(false);
   const [guessLocked, setGuessLocked] = useState(false);
   const [currentDistance, setCurrentDistance] = useState(null);
+  const [preRoundCountdown, setPreRoundCountdown] = useState(false);
 
   const startGame = useCallback(() => {
-    const shuffled = shuffleArray(VENUES);
+    const shuffled = shuffleArray(VENUES).slice(0, TOTAL_ROUNDS);
     setShuffledVenues(shuffled);
     setCurrentRoundIndex(0);
     setResults([]);
     setCurrentGuess(null);
     setGuessLocked(false);
     setCurrentDistance(null);
-    setTimerActive(true);
+    setTimerActive(false);
+    setPreRoundCountdown(true);
     setGameState(GAME_STATES.PLAYING);
+  }, []);
+
+  const handlePreRoundComplete = useCallback(() => {
+    setPreRoundCountdown(false);
+    setTimerActive(true);
   }, []);
 
   const lockGuess = useCallback((guess) => {
@@ -81,7 +90,8 @@ export default function Game() {
       setCurrentGuess(null);
       setGuessLocked(false);
       setCurrentDistance(null);
-      setTimerActive(true);
+      setTimerActive(false);
+      setPreRoundCountdown(true);
       setGameState(GAME_STATES.PLAYING);
     }
   }, [currentRoundIndex, shuffledVenues, currentGuess, currentDistance]);
@@ -99,7 +109,7 @@ export default function Game() {
 
   // SPLASH
   if (gameState === GAME_STATES.SPLASH) {
-    return <SplashScreen totalRounds={VENUES.length} onStart={startGame} />;
+    return <SplashScreen totalRounds={TOTAL_ROUNDS} onStart={startGame} />;
   }
 
   // SUMMARY
@@ -131,8 +141,8 @@ export default function Game() {
         {/* PLAYING state */}
         {gameState === GAME_STATES.PLAYING && currentVenue && (
           <>
-            {/* Matterport tour */}
-            <div className="relative" style={{ height: '55vh', minHeight: '300px' }}>
+            {/* Matterport tour — full bleed, takes most of screen */}
+            <div className="relative" style={{ height: '52vh', minHeight: '280px' }}>
               <MatterportViewer tourUrl={currentVenue.tourUrl} />
               <CountdownTimer
                 key={currentRoundIndex}
@@ -140,17 +150,17 @@ export default function Game() {
                 onExpire={handleTimerExpire}
                 isActive={timerActive}
               />
+              {preRoundCountdown && (
+                <PreRoundCountdown onComplete={handlePreRoundComplete} />
+              )}
             </div>
 
             {/* Map section */}
-            <div className="flex-1 flex flex-col p-3 md:p-4 gap-3" style={{ minHeight: '280px' }}>
-              <div className="flex-1" style={{ minHeight: '220px' }}>
-                <GuessMap
-                  onGuessPlaced={handleGuessPlaced}
-                  guessLocked={guessLocked}
-                />
-              </div>
-
+            <div className="flex flex-col p-3 md:p-4 gap-3">
+              <GuessMap
+                onGuessPlaced={handleGuessPlaced}
+                guessLocked={guessLocked}
+              />
               {currentGuess && !guessLocked && (
                 <button
                   onClick={() => lockGuess(currentGuess)}

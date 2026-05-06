@@ -39,11 +39,11 @@ export default function GuessMap({ onGuessPlaced, guessLocked }) {
   }, [guessLocked, onGuessPlaced]);
 
   return (
-    <div className="relative w-full h-full rounded-hb-lg overflow-hidden" style={{ border: '1px solid #2a2a2a' }}>
+    <div className="relative w-full rounded-hb-lg overflow-hidden" style={{ border: '1px solid #2a2a2a', height: '240px' }}>
       <MapContainer
         center={[20, 0]}
         zoom={2}
-        style={{ width: '100%', height: '100%', background: '#1a1a1a' }}
+        style={{ width: '100%', height: '240px', background: '#1a1a1a' }}
         zoomControl={true}
         attributionControl={false}
         minZoom={1}
