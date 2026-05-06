@@ -1,7 +1,8 @@
 import React from 'react';
-import { MapPin, RotateCcw, ExternalLink } from 'lucide-react';
+import { MapPin, RotateCcw } from 'lucide-react';
 import { getRating } from '@/utils/scoring';
 import Leaderboard from '@/components/game/Leaderboard';
+import GameHeader from '@/components/game/GameHeader';
 
 export default function GameSummary({ results, venues, totalScore, playerEmail, onPlayAgain }) {
   const avgMiles = results.length > 0
@@ -12,22 +13,7 @@ export default function GameSummary({ results, venues, totalScore, playerEmail, 
 
   return (
     <div className="min-h-screen bg-hb-bg flex flex-col">
-      {/* Header */}
-      <header className="flex items-center justify-between px-4 md:px-8 py-3 bg-hb-surface border-b border-hb-border">
-        <img
-          src="https://cdn.prod.website-files.com/63bd498079b1380a81c6e13b/63bd498079b13872e8c6e1a7_HeadBox-Logo-White-.png"
-          alt="HeadBox"
-          className="h-7 md:h-8 object-contain"
-        />
-        <a
-          href="https://www.headbox.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 bg-hb-red hover:bg-hb-red-dark text-white font-bold text-xs uppercase tracking-widest px-3 py-2 rounded-hb-md transition-colors duration-200"
-        >
-          Plan your event <ExternalLink size={11} />
-        </a>
-      </header>
+      <GameHeader />
 
       <div className="flex-1 max-w-2xl mx-auto w-full px-4 py-8 md:py-10 space-y-6">
         {/* Hero score */}

@@ -1,25 +1,23 @@
 import React from 'react';
 import { MapPin, Clock, Lock } from 'lucide-react';
 import { LEVELS } from '@/data/venues';
+import GameHeader from '@/components/game/GameHeader';
 
 const ROUNDS = 3;
 const SECONDS = 30;
 
 export default function SplashScreen({ onStart }) {
   return (
-    <div className="min-h-screen bg-hb-bg flex flex-col items-center justify-center px-4 relative overflow-hidden">
+    <div className="min-h-screen bg-hb-bg flex flex-col">
+      <GameHeader />
+
       {/* Background glow */}
       <div className="absolute inset-0 opacity-5 pointer-events-none" style={{
         backgroundImage: 'radial-gradient(circle at 20% 50%, #AF231C 0%, transparent 50%), radial-gradient(circle at 80% 20%, #AF231C 0%, transparent 40%)'
       }} />
 
-      <div className="relative z-10 flex flex-col items-center text-center max-w-lg w-full">
-        {/* Logo */}
-        <img
-          src="https://cdn.prod.website-files.com/63bd498079b1380a81c6e13b/63bd498079b13872e8c6e1a7_HeadBox-Logo-White-.png"
-          alt="HeadBox"
-          className="h-10 object-contain mb-10"
-        />
+      <div className="relative z-10 flex flex-col items-center text-center max-w-lg w-full mx-auto px-4 py-10 flex-1 justify-center">
+
 
         {/* Title */}
         <div className="mb-2">

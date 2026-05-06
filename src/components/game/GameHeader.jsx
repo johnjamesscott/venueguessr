@@ -1,40 +1,29 @@
 import React from 'react';
-import { ExternalLink } from 'lucide-react';
 
-export default function GameHeader({ currentRound, totalRounds, overlay = false }) {
+export default function GameHeader() {
   return (
-    <header
-      className="flex items-center justify-between px-4 md:px-8 py-3"
-      style={overlay ? {
-        background: 'linear-gradient(to bottom, rgba(18,18,18,0.85) 0%, rgba(18,18,18,0.4) 70%, transparent 100%)',
-      } : {
-        background: '#1a1a1a',
-        borderBottom: '1px solid #2a2a2a',
-      }}
-    >
+    <header className="flex items-center justify-between bg-white shadow-sm" style={{ padding: '10px 12px' }}>
       <img
-        src="https://cdn.prod.website-files.com/63bd498079b1380a81c6e13b/63bd498079b13872e8c6e1a7_HeadBox-Logo-White-.png"
+        src="https://cdn.prod.website-files.com/63bd498079b1380a81c6e13b/63bd498079b1384ca2c6e19d_HeadBox-Logo-Brick-header.png"
         alt="HeadBox"
         className="h-7 md:h-8 object-contain"
       />
-
-      <div className="flex items-center gap-3">
-        {currentRound != null && totalRounds != null && (
-          <div className="flex items-center gap-1.5">
-            <span className="text-hb-text-muted text-sm font-medium uppercase tracking-widest">Round</span>
-            <span className="text-white font-bold text-lg">
-              <span className="text-hb-red">{currentRound}</span>
-              <span className="text-hb-text-muted">/{totalRounds}</span>
-            </span>
-          </div>
-        )}
+      <div className="flex items-center gap-2">
+        <a
+          href="https://www.headbox.com/get-a-demo"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center font-bold text-xs uppercase tracking-wider px-4 py-2 rounded border-2 border-gray-800 text-gray-800 hover:bg-gray-100 transition-colors"
+        >
+          Get a demo
+        </a>
         <a
           href="https://www.headbox.com"
           target="_blank"
           rel="noopener noreferrer"
-          className="hidden sm:inline-flex items-center gap-1.5 bg-hb-red hover:bg-hb-red-dark text-white font-bold text-xs uppercase tracking-widest px-3 py-2 rounded-hb-md transition-colors duration-200"
+          className="inline-flex items-center font-bold text-xs uppercase tracking-wider px-4 py-2 rounded bg-hb-red hover:bg-hb-red-dark text-white transition-colors"
         >
-          Plan your event <ExternalLink size={11} />
+          Plan your event
         </a>
       </div>
     </header>

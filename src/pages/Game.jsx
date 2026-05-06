@@ -212,84 +212,57 @@ export default function Game() {
   if (gameState === GAME_STATES.CONTACT) {
     return (
       <div className="min-h-screen bg-hb-bg">
-        <GameHeader currentRound={shuffledVenues.length} totalRounds={shuffledVenues.length} />
+        <GameHeader />
         <ContactForm onSubmit={handleContactSubmit} onSkip={handleContactSkip} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-hb-bg flex flex-col">
+    <div className="bg-hb-bg flex flex-col" style={{ minHeight: '100dvh' }}>
       <CelebrationOverlay active={showCelebration} />
 
-      {/* PLAYING — side-by-side desktop layout */}
+      {/* PLAYING — full-screen tour with overlaid header and bottom panel */}
       {gameState === GAME_STATES.PLAYING && currentVenue && (
-        <div className="flex flex-col" style={{ minHeight: '100dvh' }}>
-          {/* White header */}
-          <header className="flex items-center justify-between px-4 md:px-8 py-3 bg-white border-b border-gray-200 shrink-0">
-            <img
-              src="https://cdn.prod.website-files.com/63bd498079b1380a81c6e13b/63bd498079b13872e8c6e1a7_HeadBox-Logo-White-.png"
-              alt="HeadBox"
-              className="h-7 md:h-8 object-contain"
-              style={{ filter: 'invert(1) brightness(0)' }}
-            />
-            <div className="flex items-center gap-2">
-              <a
-                href="https://www.headbox.com/get-a-demo"
-                target="_blank" rel="noopener noreferrer"
-                className="hidden sm:inline-flex items-center font-bold text-xs uppercase tracking-wider px-4 py-2 rounded border-2 border-gray-800 text-gray-800 hover:bg-gray-100 transition-colors"
-              >
-                Get a demo
-              </a>
-              <a
-                href="https://www.headbox.com"
-                target="_blank" rel="noopener noreferrer"
-                className="inline-flex items-center font-bold text-xs uppercase tracking-wider px-4 py-2 rounded bg-hb-red hover:bg-hb-red-dark text-white transition-colors"
-              >
-                Plan your event
-              </a>
-            </div>
-          </header>
+        <div className="fixed inset-0">
+          {/* Tour: full screen */}
+          <MatterportViewer tourUrl={currentVenue.tourUrl} onError={handleTourError} />
+          {preRoundCountdown && (
+            <PreRoundCountdown onComplete={handlePreRoundComplete} />
+          )}
 
-          {/* Main area: tour left, panel right */}
-          <div className="flex flex-1 overflow-hidden">
-            {/* Tour — takes remaining width */}
-            <div className="relative flex-1">
-              <MatterportViewer tourUrl={currentVenue.tourUrl} onError={handleTourError} />
-              {preRoundCountdown && (
-                <PreRoundCountdown onComplete={handlePreRoundComplete} />
-              )}
+          {/* Header overlay — top, 12px from edges */}
+          <div className="absolute top-0 left-0 right-0 z-50" style={{ padding: '12px' }}>
+            <GameHeader />
+          </div>
+
+          {/* Bottom overlay — map + timer, 33vh, 12px from edges */}
+          <div
+            className="absolute bottom-0 left-0 right-0 z-50 flex gap-3"
+            style={{ padding: '0 12px 12px 12px', height: '33vh' }}
+          >
+            {/* Map */}
+            <div className="flex-1 relative rounded-xl overflow-hidden shadow-2xl">
+              <GuessMap
+                onGuessPlaced={handleGuessPlaced}
+                guessLocked={guessLocked}
+                currentGuess={currentGuess}
+                onLockGuess={() => lockGuess(currentGuess)}
+                fill
+              />
             </div>
 
-            {/* Right panel */}
-            <div className="flex flex-col bg-white border-l border-gray-200 shrink-0" style={{ width: '280px' }}>
-              {/* Level label */}
-              <div className="px-4 pt-4 pb-2 border-b border-gray-100">
-                <p className="text-gray-800 font-black text-base leading-tight">
-                  Level {selectedLevel}: {LEVELS.find(l => l.id === selectedLevel)?.name || 'UK and Ireland'}
-                </p>
-              </div>
-
-              {/* Circular timer */}
-              <div className="flex items-center justify-center py-6">
-                <CountdownTimer
-                  key={currentRoundIndex}
-                  seconds={ROUND_SECONDS}
-                  onExpire={handleTimerExpire}
-                  isActive={timerActive}
-                />
-              </div>
-
-              {/* Map fills remaining space */}
-              <div className="flex-1 relative min-h-0">
-                <GuessMap
-                  onGuessPlaced={handleGuessPlaced}
-                  guessLocked={guessLocked}
-                  currentGuess={currentGuess}
-                  onLockGuess={() => lockGuess(currentGuess)}
-                  fill
-                />
-              </div>
+            {/* Timer + level panel */}
+            <div className="flex flex-col items-center justify-center bg-white rounded-xl shadow-2xl px-5 py-4 shrink-0 gap-2" style={{ minWidth: '160px' }}>
+              <p className="text-gray-800 font-black text-sm leading-tight text-center">
+                Level {selectedLevel}: {LEVELS.find(l => l.id === selectedLevel)?.name || 'UK and Ireland'}
+              </p>
+              <CountdownTimer
+                key={currentRoundIndex}
+                seconds={ROUND_SECONDS}
+                onExpire={handleTimerExpire}
+                isActive={timerActive}
+              />
             </div>
           </div>
         </div>
@@ -297,8 +270,8 @@ export default function Game() {
 
       {/* ROUND RESULT */}
       {gameState === GAME_STATES.ROUND_RESULT && currentVenue && (
-        <>
-          <GameHeader currentRound={currentRoundIndex + 1} totalRounds={shuffledVenues.length} />
+        <div className="flex flex-col" style={{ minHeight: '100dvh' }}>
+          <GameHeader />
           <div className="flex-1 p-3 md:p-4">
             <RoundResult
               roundNumber={currentRoundIndex + 1}
@@ -310,7 +283,7 @@ export default function Game() {
               isLastRound={isLastRound}
             />
           </div>
-        </>
+        </div>
       )}
     </div>
   );
