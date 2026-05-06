@@ -1,53 +1,53 @@
 import React, { useEffect, useRef, useState } from 'react';
 
+const SIZE = 120;
+const STROKE = 8;
+const R = (SIZE - STROKE) / 2;
+const CIRC = 2 * Math.PI * R;
+
 export default function CountdownTimer({ seconds, onExpire, isActive }) {
   const intervalRef = useRef(null);
   const [timeLeft, setTimeLeft] = React.useState(seconds);
 
-  useEffect(() => {
-    setTimeLeft(seconds);
-  }, [seconds]);
+  useEffect(() => { setTimeLeft(seconds); }, [seconds]);
 
   useEffect(() => {
-    if (!isActive) {
-      clearInterval(intervalRef.current);
-      return;
-    }
-
+    if (!isActive) { clearInterval(intervalRef.current); return; }
     intervalRef.current = setInterval(() => {
       setTimeLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(intervalRef.current);
-          onExpire();
-          return 0;
-        }
+        if (prev <= 1) { clearInterval(intervalRef.current); onExpire(); return 0; }
         return prev - 1;
       });
     }, 1000);
-
     return () => clearInterval(intervalRef.current);
   }, [isActive, onExpire]);
 
   const isUrgent = timeLeft <= 10;
   const progress = timeLeft / seconds;
+  const dashOffset = CIRC * (1 - progress);
+  const ringColor = isUrgent ? '#ef4444' : '#AF231C';
 
   return (
-    <div className={`absolute top-4 right-4 z-20 flex flex-col items-center ${isUrgent ? 'timer-urgent' : ''}`}>
-      <div
-        className="relative w-16 h-16 rounded-hb-md overflow-hidden"
-        style={{ background: isUrgent ? '#AF231C' : 'rgba(0,0,0,0.75)', border: '1px solid rgba(255,255,255,0.1)' }}
-      >
-        {/* Progress bar background */}
-        <div
-          className="absolute bottom-0 left-0 right-0 transition-all duration-1000"
-          style={{
-            height: `${progress * 100}%`,
-            background: isUrgent ? 'rgba(255,255,255,0.15)' : 'rgba(175,35,28,0.3)',
-          }}
-        />
-        <div className="relative z-10 flex flex-col items-center justify-center h-full">
-          <span className="text-white font-black text-xl leading-none">{timeLeft}</span>
-          <span className="text-white/70 text-[9px] font-bold uppercase tracking-wider mt-0.5">secs</span>
+    <div className={`flex flex-col items-center ${isUrgent ? 'timer-urgent' : ''}`}>
+      <div className="relative" style={{ width: SIZE, height: SIZE }}>
+        <svg width={SIZE} height={SIZE} style={{ transform: 'rotate(-90deg)' }}>
+          {/* Track */}
+          <circle cx={SIZE / 2} cy={SIZE / 2} r={R} fill="none" stroke="#e5e7eb" strokeWidth={STROKE} />
+          {/* Progress */}
+          <circle
+            cx={SIZE / 2} cy={SIZE / 2} r={R}
+            fill="none"
+            stroke={ringColor}
+            strokeWidth={STROKE}
+            strokeDasharray={CIRC}
+            strokeDashoffset={dashOffset}
+            strokeLinecap="round"
+            style={{ transition: 'stroke-dashoffset 0.9s linear, stroke 0.3s' }}
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="font-black leading-none" style={{ fontSize: '32px', color: ringColor }}>{timeLeft}</span>
+          <span className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-0.5">secs</span>
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { VENUES_BY_LEVEL } from '@/data/venues';
+import { VENUES_BY_LEVEL, LEVELS } from '@/data/venues';
 import { calculateDistance, shuffleArray } from '@/utils/distance';
 import { calculateScore } from '@/utils/scoring';
 import { base44 } from '@/api/base44Client';
@@ -222,39 +222,75 @@ export default function Game() {
     <div className="min-h-screen bg-hb-bg flex flex-col">
       <CelebrationOverlay active={showCelebration} />
 
-      {/* PLAYING */}
+      {/* PLAYING — side-by-side desktop layout */}
       {gameState === GAME_STATES.PLAYING && currentVenue && (
         <div className="flex flex-col" style={{ minHeight: '100dvh' }}>
-          <div className="relative" style={{ height: '52vh', minHeight: '300px' }}>
-            <MatterportViewer tourUrl={currentVenue.tourUrl} onError={handleTourError} />
-            <div className="absolute top-0 left-0 right-0 z-30">
-              <GameHeader currentRound={currentRoundIndex + 1} totalRounds={shuffledVenues.length} overlay />
-            </div>
-            <CountdownTimer
-              key={currentRoundIndex}
-              seconds={ROUND_SECONDS}
-              onExpire={handleTimerExpire}
-              isActive={timerActive}
+          {/* White header */}
+          <header className="flex items-center justify-between px-4 md:px-8 py-3 bg-white border-b border-gray-200 shrink-0">
+            <img
+              src="https://cdn.prod.website-files.com/63bd498079b1380a81c6e13b/63bd498079b13872e8c6e1a7_HeadBox-Logo-White-.png"
+              alt="HeadBox"
+              className="h-7 md:h-8 object-contain"
+              style={{ filter: 'invert(1) brightness(0)' }}
             />
-            {preRoundCountdown && (
-              <PreRoundCountdown onComplete={handlePreRoundComplete} />
-            )}
-          </div>
-
-          <div className="flex flex-col p-3 md:p-4 gap-3">
-            <GuessMap
-              onGuessPlaced={handleGuessPlaced}
-              guessLocked={guessLocked}
-              currentGuess={currentGuess}
-            />
-            {currentGuess && !guessLocked && (
-              <button
-                onClick={() => lockGuess(currentGuess)}
-                className="w-full bg-hb-red hover:bg-hb-red-dark text-white font-bold uppercase tracking-widest text-sm py-3.5 rounded-hb-xl transition-colors duration-200"
+            <div className="flex items-center gap-2">
+              <a
+                href="https://www.headbox.com/get-a-demo"
+                target="_blank" rel="noopener noreferrer"
+                className="hidden sm:inline-flex items-center font-bold text-xs uppercase tracking-wider px-4 py-2 rounded border-2 border-gray-800 text-gray-800 hover:bg-gray-100 transition-colors"
               >
-                Lock In Guess
-              </button>
-            )}
+                Get a demo
+              </a>
+              <a
+                href="https://www.headbox.com"
+                target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center font-bold text-xs uppercase tracking-wider px-4 py-2 rounded bg-hb-red hover:bg-hb-red-dark text-white transition-colors"
+              >
+                Plan your event
+              </a>
+            </div>
+          </header>
+
+          {/* Main area: tour left, panel right */}
+          <div className="flex flex-1 overflow-hidden">
+            {/* Tour — takes remaining width */}
+            <div className="relative flex-1">
+              <MatterportViewer tourUrl={currentVenue.tourUrl} onError={handleTourError} />
+              {preRoundCountdown && (
+                <PreRoundCountdown onComplete={handlePreRoundComplete} />
+              )}
+            </div>
+
+            {/* Right panel */}
+            <div className="flex flex-col bg-white border-l border-gray-200 shrink-0" style={{ width: '280px' }}>
+              {/* Level label */}
+              <div className="px-4 pt-4 pb-2 border-b border-gray-100">
+                <p className="text-gray-800 font-black text-base leading-tight">
+                  Level {selectedLevel}: {LEVELS.find(l => l.id === selectedLevel)?.name || 'UK and Ireland'}
+                </p>
+              </div>
+
+              {/* Circular timer */}
+              <div className="flex items-center justify-center py-6">
+                <CountdownTimer
+                  key={currentRoundIndex}
+                  seconds={ROUND_SECONDS}
+                  onExpire={handleTimerExpire}
+                  isActive={timerActive}
+                />
+              </div>
+
+              {/* Map fills remaining space */}
+              <div className="flex-1 relative min-h-0">
+                <GuessMap
+                  onGuessPlaced={handleGuessPlaced}
+                  guessLocked={guessLocked}
+                  currentGuess={currentGuess}
+                  onLockGuess={() => lockGuess(currentGuess)}
+                  fill
+                />
+              </div>
+            </div>
           </div>
         </div>
       )}
