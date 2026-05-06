@@ -3,11 +3,13 @@ import React from 'react';
 export default function GameHeader() {
   return (
     <header className="flex items-center justify-between bg-white shadow-sm" style={{ padding: '12px 16px', borderRadius: '8px' }}>
-      <img
-        src="https://cdn.prod.website-files.com/63bd498079b1380a81c6e13b/63bd498079b1384ca2c6e19d_HeadBox-Logo-Brick-header.png"
-        alt="HeadBox"
-        className="h-9 md:h-10 object-contain"
-      />
+      <a href="https://www.headbox.com" target="_blank" rel="noopener noreferrer">
+        <img
+          src="https://cdn.prod.website-files.com/63bd498079b1380a81c6e13b/63bd498079b1384ca2c6e19d_HeadBox-Logo-Brick-header.png"
+          alt="HeadBox"
+          className="h-10 md:h-12 object-contain"
+        />
+      </a>
       <div className="flex items-center gap-2">
         <a
           href="https://www.headbox.com/get-a-demo"
