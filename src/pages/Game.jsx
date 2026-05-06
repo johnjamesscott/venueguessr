@@ -33,9 +33,13 @@ export default function Game() {
   const [currentDistance, setCurrentDistance] = useState(null);
   const [preRoundCountdown, setPreRoundCountdown] = useState(false);
 
+  // Keep a pool of extra venues to swap in if a tour errors
+  const [venuePool, setVenuePool] = useState([]);
+
   const startGame = useCallback(() => {
-    const shuffled = shuffleArray(VENUES).slice(0, TOTAL_ROUNDS);
-    setShuffledVenues(shuffled);
+    const shuffled = shuffleArray(VENUES);
+    setShuffledVenues(shuffled.slice(0, TOTAL_ROUNDS));
+    setVenuePool(shuffled.slice(TOTAL_ROUNDS));
     setCurrentRoundIndex(0);
     setResults([]);
     setCurrentGuess(null);
@@ -45,6 +49,20 @@ export default function Game() {
     setPreRoundCountdown(true);
     setGameState(GAME_STATES.PLAYING);
   }, []);
+
+  // Swap out the current errored venue for the next one in the pool
+  const handleTourError = useCallback(() => {
+    setVenuePool(pool => {
+      if (pool.length === 0) return pool;
+      const [next, ...rest] = pool;
+      setShuffledVenues(venues => {
+        const updated = [...venues];
+        updated[currentRoundIndex] = next;
+        return updated;
+      });
+      return rest;
+    });
+  }, [currentRoundIndex]);
 
   const handlePreRoundComplete = useCallback(() => {
     setPreRoundCountdown(false);
@@ -143,7 +161,7 @@ export default function Game() {
           <>
             {/* Matterport tour — full bleed, takes most of screen */}
             <div className="relative" style={{ height: '52vh', minHeight: '280px' }}>
-              <MatterportViewer tourUrl={currentVenue.tourUrl} />
+              <MatterportViewer tourUrl={currentVenue.tourUrl} onError={handleTourError} />
               <CountdownTimer
                 key={currentRoundIndex}
                 seconds={ROUND_SECONDS}
