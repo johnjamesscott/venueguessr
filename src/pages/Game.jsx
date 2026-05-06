@@ -190,46 +190,49 @@ export default function Game() {
 
   return (
     <div className="min-h-screen bg-hb-bg flex flex-col">
-      <GameHeader currentRound={currentRoundIndex + 1} totalRounds={shuffledVenues.length} />
-
-      <div className="flex-1 flex flex-col">
-        {/* PLAYING state */}
-        {gameState === GAME_STATES.PLAYING && currentVenue && (
-          <>
-            {/* Matterport tour — full bleed, takes most of screen */}
-            <div className="relative" style={{ height: '52vh', minHeight: '280px' }}>
-              <MatterportViewer tourUrl={currentVenue.tourUrl} onError={handleTourError} />
-              <CountdownTimer
-                key={currentRoundIndex}
-                seconds={ROUND_SECONDS}
-                onExpire={handleTimerExpire}
-                isActive={timerActive}
-              />
-              {preRoundCountdown && (
-                <PreRoundCountdown onComplete={handlePreRoundComplete} />
-              )}
+      {/* PLAYING state — tour is full bleed behind the nav */}
+      {gameState === GAME_STATES.PLAYING && currentVenue && (
+        <div className="flex flex-col" style={{ minHeight: '100dvh' }}>
+          {/* Tour takes full screen with nav overlaid on top */}
+          <div className="relative" style={{ height: '52vh', minHeight: '300px' }}>
+            <MatterportViewer tourUrl={currentVenue.tourUrl} onError={handleTourError} />
+            {/* Nav overlay — sits on top of the tour */}
+            <div className="absolute top-0 left-0 right-0 z-30">
+              <GameHeader currentRound={currentRoundIndex + 1} totalRounds={shuffledVenues.length} overlay />
             </div>
+            <CountdownTimer
+              key={currentRoundIndex}
+              seconds={ROUND_SECONDS}
+              onExpire={handleTimerExpire}
+              isActive={timerActive}
+            />
+            {preRoundCountdown && (
+              <PreRoundCountdown onComplete={handlePreRoundComplete} />
+            )}
+          </div>
 
-            {/* Map section */}
-            <div className="flex flex-col p-3 md:p-4 gap-3">
-              <GuessMap
-                onGuessPlaced={handleGuessPlaced}
-                guessLocked={guessLocked}
-              />
-              {currentGuess && !guessLocked && (
-                <button
-                  onClick={() => lockGuess(currentGuess)}
-                  className="w-full bg-hb-red hover:bg-hb-red-dark text-white font-bold uppercase tracking-widest text-sm py-3.5 rounded-hb-xl transition-colors duration-200"
-                >
-                  Lock In Guess
-                </button>
-              )}
-            </div>
-          </>
-        )}
+          {/* Map section */}
+          <div className="flex flex-col p-3 md:p-4 gap-3">
+            <GuessMap
+              onGuessPlaced={handleGuessPlaced}
+              guessLocked={guessLocked}
+            />
+            {currentGuess && !guessLocked && (
+              <button
+                onClick={() => lockGuess(currentGuess)}
+                className="w-full bg-hb-red hover:bg-hb-red-dark text-white font-bold uppercase tracking-widest text-sm py-3.5 rounded-hb-xl transition-colors duration-200"
+              >
+                Lock In Guess
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
-        {/* ROUND RESULT state */}
-        {gameState === GAME_STATES.ROUND_RESULT && currentVenue && (
+      {/* ROUND RESULT state — normal header */}
+      {gameState === GAME_STATES.ROUND_RESULT && currentVenue && (
+        <>
+          <GameHeader currentRound={currentRoundIndex + 1} totalRounds={shuffledVenues.length} />
           <div className="flex-1 p-3 md:p-4">
             <RoundResult
               roundNumber={currentRoundIndex + 1}
@@ -241,8 +244,8 @@ export default function Game() {
               isLastRound={isLastRound}
             />
           </div>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 }
