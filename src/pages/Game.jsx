@@ -1,6 +1,8 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { VENUES } from '@/data/venues';
 import { calculateDistance, shuffleArray } from '@/utils/distance';
+import { calculateScore } from '@/utils/scoring';
+import { base44 } from '@/api/base44Client';
 import SplashScreen from '@/components/game/SplashScreen';
 import GameHeader from '@/components/game/GameHeader';
 import MatterportViewer from '@/components/game/MatterportViewer';
@@ -32,6 +34,8 @@ export default function Game() {
   const [guessLocked, setGuessLocked] = useState(false);
   const [currentDistance, setCurrentDistance] = useState(null);
   const [preRoundCountdown, setPreRoundCountdown] = useState(false);
+  const [currentScore, setCurrentScore] = useState(0);
+  const [playerEmail, setPlayerEmail] = useState(null);
 
   // Keep a pool of extra venues to swap in if a tour errors
   const [venuePool, setVenuePool] = useState([]);
@@ -45,6 +49,7 @@ export default function Game() {
     setCurrentGuess(null);
     setGuessLocked(false);
     setCurrentDistance(null);
+    setCurrentScore(0);
     setTimerActive(false);
     setPreRoundCountdown(true);
     setGameState(GAME_STATES.PLAYING);
@@ -75,8 +80,10 @@ export default function Game() {
     const dist = guess
       ? calculateDistance(guess.lat, guess.lng, venue.lat, venue.lng)
       : null;
+    const score = dist ? calculateScore(dist.km) : 0;
     setCurrentGuess(guess);
     setCurrentDistance(dist);
+    setCurrentScore(score);
     setGuessLocked(true);
     setTimerActive(false);
     setGameState(GAME_STATES.ROUND_RESULT);
@@ -98,6 +105,7 @@ export default function Game() {
       venueId: venue.id,
       guess: currentGuess,
       distance: currentDistance,
+      score: currentScore,
     }]);
 
     const isLastRound = currentRoundIndex >= shuffledVenues.length - 1;
@@ -108,15 +116,41 @@ export default function Game() {
       setCurrentGuess(null);
       setGuessLocked(false);
       setCurrentDistance(null);
+      setCurrentScore(0);
       setTimerActive(false);
       setPreRoundCountdown(true);
       setGameState(GAME_STATES.PLAYING);
     }
   }, [currentRoundIndex, shuffledVenues, currentGuess, currentDistance]);
 
-  const handleContactSubmit = useCallback(() => {
-    setGameState(GAME_STATES.SUMMARY);
+  const saveToLeaderboard = useCallback(async (formData, finalResults) => {
+    const total = finalResults.reduce((sum, r) => sum + (r.score || 0), 0);
+    const avgKm = finalResults.filter(r => r.distance).length > 0
+      ? finalResults.reduce((sum, r) => sum + (r.distance?.km || 0), 0) / finalResults.filter(r => r.distance).length
+      : 0;
+    const name = formData
+      ? `${formData.firstName} ${formData.lastName}`.trim()
+      : 'Anonymous';
+    await base44.entities.LeaderboardEntry.create({
+      player_name: name,
+      email: formData?.email || '',
+      total_score: total,
+      rounds_played: finalResults.length,
+      avg_distance_km: Math.round(avgKm),
+    });
+    if (formData?.email) setPlayerEmail(formData.email);
   }, []);
+
+  const handleContactSubmit = useCallback((formData) => {
+    const finalResults = [...results, {
+      venueId: shuffledVenues[currentRoundIndex]?.id,
+      guess: currentGuess,
+      distance: currentDistance,
+      score: currentScore,
+    }];
+    saveToLeaderboard(formData, finalResults);
+    setGameState(GAME_STATES.SUMMARY);
+  }, [results, shuffledVenues, currentRoundIndex, currentGuess, currentDistance, currentScore, saveToLeaderboard]);
 
   const handleContactSkip = useCallback(() => {
     setGameState(GAME_STATES.SUMMARY);
@@ -132,10 +166,13 @@ export default function Game() {
 
   // SUMMARY
   if (gameState === GAME_STATES.SUMMARY) {
+    const totalScore = results.reduce((sum, r) => sum + (r.score || 0), 0);
     return (
       <GameSummary
         results={results}
         venues={shuffledVenues}
+        totalScore={totalScore}
+        playerEmail={playerEmail}
         onPlayAgain={startGame}
       />
     );
@@ -199,6 +236,7 @@ export default function Game() {
               venue={currentVenue}
               guess={currentGuess}
               distance={currentDistance}
+              score={currentScore}
               onNext={handleNextRound}
               isLastRound={isLastRound}
             />

@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import { calculateScore, getRating } from '@/utils/scoring';
 
 const redIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
@@ -23,76 +24,132 @@ function FitBounds({ guess, actual }) {
   useEffect(() => {
     if (guess && actual) {
       const bounds = L.latLngBounds([guess, actual]);
-      map.fitBounds(bounds, { padding: [40, 40] });
+      map.fitBounds(bounds, { padding: [60, 60] });
+    } else if (actual) {
+      map.setView(actual, 5);
     }
   }, [guess, actual, map]);
   return null;
 }
 
-export default function RoundResult({ roundNumber, venue, guess, distance, onNext, isLastRound }) {
+function AnimatedScore({ target }) {
+  const [displayed, setDisplayed] = useState(0);
+
+  useEffect(() => {
+    if (target === 0) return;
+    const duration = 1200;
+    const steps = 60;
+    const increment = target / steps;
+    let current = 0;
+    const interval = setInterval(() => {
+      current = Math.min(current + increment, target);
+      setDisplayed(Math.round(current));
+      if (current >= target) clearInterval(interval);
+    }, duration / steps);
+    return () => clearInterval(interval);
+  }, [target]);
+
+  return <>{displayed.toLocaleString()}</>;
+}
+
+export default function RoundResult({ roundNumber, venue, guess, distance, score, onNext, isLastRound }) {
   const guessPos = guess ? [guess.lat, guess.lng] : null;
   const actualPos = [venue.lat, venue.lng];
+  const rating = getRating(score);
 
   return (
-    <div className="fade-in bg-hb-surface rounded-hb-lg overflow-hidden border border-hb-border">
-      <div className="flex flex-col md:flex-row">
-        {/* Left: result info */}
-        <div className="flex-1 p-6 md:p-8 flex flex-col justify-center">
-          <p className="text-hb-red font-bold text-sm uppercase tracking-widest mb-2">Round {roundNumber}</p>
-          {guess ? (
+    <div className="fade-in flex flex-col gap-3">
+      {/* Full-width map */}
+      <div className="w-full rounded-hb-lg overflow-hidden border border-hb-border" style={{ height: '280px' }}>
+        <MapContainer
+          center={actualPos}
+          zoom={4}
+          style={{ width: '100%', height: '280px' }}
+          zoomControl={false}
+          attributionControl={false}
+        >
+          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="" />
+          <Marker position={actualPos} icon={redIcon} />
+          {guessPos && (
             <>
-              <h2 className="text-white font-black text-4xl md:text-5xl leading-tight mb-1">
-                {distance.miles} MILES
-              </h2>
-              <h3 className="text-white/60 font-bold text-2xl md:text-3xl mb-2">
-                ({distance.km} KM) AWAY
-              </h3>
-            </>
-          ) : (
-            <>
-              <h2 className="text-white font-black text-3xl md:text-4xl leading-tight mb-1">TIME'S UP!</h2>
-              <p className="text-white/60 font-medium text-lg mb-2">No guess was placed</p>
+              <Marker position={guessPos} icon={greyIcon} />
+              <Polyline
+                positions={[guessPos, actualPos]}
+                color="#AF231C"
+                weight={2.5}
+                dashArray="8 5"
+              />
             </>
           )}
-          <p className="text-hb-text-muted text-sm mb-6">
-            <span className="text-white/80 font-medium">{venue.venueName}</span>
-            {' — '}
-            {venue.city}, {venue.country}
-          </p>
-          <button
-            onClick={onNext}
-            className="w-full md:w-auto px-8 py-3 bg-transparent border-2 border-hb-red text-white font-bold uppercase tracking-widest text-sm rounded-hb-md hover:bg-hb-red transition-colors duration-200"
-          >
-            {isLastRound ? 'See Results' : 'Next Round'}
-          </button>
-        </div>
+          <FitBounds guess={guessPos} actual={actualPos} />
+        </MapContainer>
+      </div>
 
-        {/* Right: result map */}
-        <div className="w-full md:w-80 h-56 md:h-auto" style={{ minHeight: '224px' }}>
-          <MapContainer
-            center={actualPos}
-            zoom={6}
-            style={{ width: '100%', height: '100%', minHeight: '224px' }}
-            zoomControl={false}
-            attributionControl={false}
-          >
-            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="" />
-            <Marker position={actualPos} icon={redIcon} />
-            {guessPos && (
+      {/* Score + info card */}
+      <div className="bg-hb-surface rounded-hb-lg border border-hb-border p-5">
+        <div className="flex items-start justify-between gap-4">
+          {/* Left: distance & venue */}
+          <div className="flex-1 min-w-0">
+            <p className="text-hb-red font-bold text-xs uppercase tracking-widest mb-1">Round {roundNumber}</p>
+            {guess ? (
               <>
-                <Marker position={guessPos} icon={greyIcon} />
-                <Polyline
-                  positions={[guessPos, actualPos]}
-                  color="#AF231C"
-                  weight={2}
-                  dashArray="6 4"
-                />
-                <FitBounds guess={guessPos} actual={actualPos} />
+                <p className="text-white font-black text-2xl leading-tight">
+                  {distance.miles} <span className="text-white/50 font-bold text-lg">miles</span>
+                </p>
+                <p className="text-white/40 font-medium text-sm">{distance.km} km away</p>
               </>
+            ) : (
+              <p className="text-white font-black text-xl">TIME'S UP</p>
             )}
-          </MapContainer>
+            <p className="text-hb-text-muted text-xs mt-2 truncate">
+              <span className="text-white/70 font-medium">{venue.venueName}</span>
+              {' — '}{venue.city}, {venue.country}
+            </p>
+          </div>
+
+          {/* Right: score */}
+          <div className="text-right shrink-0">
+            <div
+              className="text-4xl font-black leading-tight"
+              style={{ color: rating.color }}
+            >
+              <AnimatedScore target={score} />
+            </div>
+            <div className="text-hb-text-muted text-xs font-bold uppercase tracking-wider">points</div>
+            <div
+              className="text-xs font-bold uppercase tracking-wider mt-1"
+              style={{ color: rating.color }}
+            >
+              {rating.label}
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Legend */}
+      {guessPos && (
+        <div className="flex items-center gap-4 text-xs text-hb-text-muted px-1">
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded-full bg-slate-400" />
+            Your guess
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded-full bg-hb-red" />
+            Actual venue
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-6 border-t-2 border-dashed border-hb-red" />
+            Distance
+          </div>
+        </div>
+      )}
+
+      <button
+        onClick={onNext}
+        className="w-full bg-hb-red hover:bg-hb-red-dark text-white font-bold uppercase tracking-widest text-sm py-3.5 rounded-hb-xl transition-colors duration-200"
+      >
+        {isLastRound ? 'See Results' : 'Next Round'}
+      </button>
     </div>
   );
 }

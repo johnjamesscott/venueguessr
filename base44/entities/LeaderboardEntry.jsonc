@@ -1,0 +1,30 @@
+{
+  "name": "LeaderboardEntry",
+  "type": "object",
+  "properties": {
+    "player_name": {
+      "type": "string",
+      "description": "Display name of the player"
+    },
+    "email": {
+      "type": "string",
+      "description": "Player email"
+    },
+    "total_score": {
+      "type": "number",
+      "description": "Total score across all rounds"
+    },
+    "rounds_played": {
+      "type": "number",
+      "description": "Number of rounds played"
+    },
+    "avg_distance_km": {
+      "type": "number",
+      "description": "Average distance in km"
+    }
+  },
+  "required": [
+    "player_name",
+    "total_score"
+  ]
+}
