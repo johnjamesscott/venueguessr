@@ -62,7 +62,7 @@ export default function GuessMap({ onGuessPlaced, guessLocked, currentGuess, onL
         minZoom={1}
         maxZoom={10}
       >
-        <TileLayer url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png" attribution="" />
+        <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" attribution="" />
         <ClickHandler onMapClick={handleMapClick} />
         {markerPos && <Marker position={markerPos} icon={hbIcon} />}
       </MapContainer>
