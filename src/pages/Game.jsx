@@ -61,13 +61,14 @@ export default function Game() {
     if (levelId === 1 && OUTSIDE_VENUES.length > 0) {
       const outsideShuffled = shuffleArray(OUTSIDE_VENUES);
       const londonShuffled = shuffleArray(LONDON_VENUES);
-      // Pick 1 outside + 2 London, then shuffle the trio
-      const trio = shuffleArray([outsideShuffled[0], londonShuffled[0], londonShuffled[1]]);
-      // Remaining venues for the fallback pool
-      const pool = [...outsideShuffled.slice(1), ...londonShuffled.slice(2)];
+      // Pick at least 1 outside-London, rest random from full pool
+      const guaranteed = outsideShuffled[0];
+      const remaining = shuffleArray([...outsideShuffled.slice(1), ...londonShuffled]);
+      const trio = shuffleArray([guaranteed, ...remaining.slice(0, TOTAL_ROUNDS - 1)]);
+      const pool = remaining.slice(TOTAL_ROUNDS - 1);
       selected = trio;
       setShuffledVenues(selected);
-      setVenuePool(shuffleArray(pool));
+      setVenuePool(pool);
     } else {
       const venues = VENUES_BY_LEVEL[levelId] || VENUES_BY_LEVEL[1];
       const shuffled = shuffleArray(venues);

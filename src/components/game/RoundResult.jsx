@@ -65,7 +65,7 @@ export default function RoundResult({ roundNumber, venue, guess, distance, score
           center={actualPos}
           zoom={4}
           style={{ width: '100%', height: '280px' }}
-          zoomControl={false}
+          zoomControl={true}
           attributionControl={false}
         >
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="" />
