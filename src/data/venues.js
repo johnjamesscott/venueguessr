@@ -1,12 +1,5 @@
 // VenueGuessr venue data — organised by level
 
-// Helper: parse POINT (lng lat) strings
-function parsePoint(point) {
-  const m = point.match(/POINT \(([^ ]+) ([^ )]+)\)/);
-  if (!m) return { lat: 0, lng: 0 };
-  return { lng: parseFloat(m[1]), lat: parseFloat(m[2]) };
-}
-
 export const LEVELS = [
   { id: 1, name: 'UK & Ireland', emoji: '🇬🇧', difficulty: 'Easy',    color: '#22c55e', locked: false },
   { id: 2, name: 'Europe',       emoji: '🌍', difficulty: 'Moderate', color: '#f59e0b', locked: true  },
@@ -16,53 +9,58 @@ export const LEVELS = [
 ];
 
 // ── Level 1: UK & Ireland ──────────────────────────────────────────────────
+// [venueName, spaceName, city, country, lat, lng, tourUrl]
 const UK_IRELAND_RAW = [
-  [55004, 'Alfi Spitalfields',      'Covered Terrace',              '3 Crispin Place',           'London',      'GB', 'https://tours.headbox.com/model/222fa66KUnF',              'POINT (-0.07637569999999999 51.5198116)'],
-  [52417, 'Batch LDN',              'Batch LDN',                    "9-11 Short's Gardens",      'London',      'GB', 'https://tours.headbox.com/model/sFdX8GEcLFU',             'POINT (-0.1264957 51.5141032)'],
-  [49585, 'Brunswick House',        'Smoking Room',                 '30 Wandsworth Road',        'London',      'GB', 'https://tours.headbox.com/model/T3orGfXaMPd',             'POINT (-0.1265278 51.4847537)'],
-  [49261, 'The Ivy City Garden',    'The Oasis Bar',                '69 Old Broad Street',       'London',      'GB', 'https://my.matterport.com/show/?m=7N8YP97MJCL',           'POINT (-0.0827826 51.51682659999999)'],
-  [49130, 'Bob Bob Ricard City',    'Red Private Dining Room',      '122 Leadenhall Street',     'London',      'GB', 'https://my.matterport.com/show/?m=aKezmLQR6NK',           'POINT (-0.0823131 51.51386189999999)'],
-  [49017, 'MR PORTER London',       "Chef's table",                 '22 Park Lane',              'London',      'GB', 'https://tours.headbox.com/model/7Wx3XXawzhM',             'POINT (-0.1500168 51.50555749999999)'],
-  [47862, 'McLarens on the Corner', 'Full Venue Hire',              '8 Morningside Road',        'Edinburgh',   'GB', 'https://tours.headbox.com/model/MNng6dMaBYz',             'POINT (-3.2105239 55.9343102)'],
-  [47860, 'Badger & Co.',           'The Lounge',                   '32 Castle Street',          'Edinburgh',   'GB', 'https://tours.headbox.com/model/9FiQftGgzPp',             'POINT (-3.2036173 55.9520364)'],
-  [47631, 'F1 Arcade Birmingham',   'The Terrace',                  'Chamberlain Square',        'Birmingham',  'GB', 'https://tours.headbox.com/model/2SvEBekPz5D',             'POINT (-1.9056346 52.4798612)'],
-  [46742, 'Clays City',             'Exclusive Venue Hire',         '55 Moorgate',               'London',      'GB', 'https://tours.headbox.com/model/QDDQ9TctzbQ',             'POINT (-0.0893252 51.51679739999999)'],
-  [45554, 'The Dixon Tower Bridge', 'Courtroom Bar',                '211 Tooley Street',         'London',      'GB', 'https://tours.headbox.com/model/6hSp9gBC8Gk',             'POINT (-0.0768266 51.5021689)'],
-  [45328, 'City Cruises',           'Millennium City/Dawn/Peace',   'Cherry Garden Pier',        'Rotherhithe', 'GB', 'https://tours.headbox.com/model/ZM79cZEh1yj',             'POINT (-0.061874 51.500977)'],
-  [40307, 'Pergola on the Wharf',   'Restaurant',                   'Crossrail Place',           'London',      'GB', 'https://tours.headbox.com/model/kSHtNkHV375',             'POINT (-0.0180659 51.5060158)'],
-  [38506, 'The Drum Wembley',       'Boardroom',                    'Engineers Way',             'Wembley',     'GB', 'https://tours.headbox.com/model/vhbakGgGSow',             'POINT (-0.2816834 51.5586038)'],
-  [37924, 'Protein Studios',        'Studio 4 + 5',                 '31 New Inn Yard',           'London',      'GB', 'https://tours.headbox.com/model/LK7bqrXNuCF',             'POINT (-0.0781898000000183 51.52455399999999)'],
-  [37217, 'Los Mochis',             'Bar & Lounge',                 '2-4 Farmer Street',         'London',      'GB', 'https://tours.headbox.com/model/VnoC19Y2RnJ',             'POINT (-0.1971296 51.5085545)'],
-  [35934, 'The Ned London',         'The Wren Room',                '27 Poultry',                'London',      'GB', 'https://tours.headbox.com/model/VbdKSe4BETd',             'POINT (-0.08961319999999999 51.5139059)'],
-  [35288, 'German Gymnasium',       'The Balcony',                  "King's Blvd",               'London',      'GB', 'https://tours.headbox.com/model/tbMrGLFkwRj',             'POINT (-0.1256071627044548 51.53231355075865)'],
-  [29183, 'Le Pont De La Tour',     'Bar & Terrace',                '36D Shad Thames',           'London',      'GB', 'https://tours.headbox.com/model/kJkFnPA9rJk',             'POINT (-0.0731375 51.5034648)'],
-  [21846, 'Ham Yard Hotel',         'Ham Yard Theatre',             '1 Ham Yard',                'London',      'GB', 'https://tours.headbox.com/model/AWvL4ALKDoY',             'POINT (-0.134821 51.5112601)'],
-  [17982, 'The Brewery',            'The James Watt',               '52 Chiswell St',            'London',      'GB', 'https://tours.headbox.com/model/8WZ8rvWaLYi',             'POINT (-0.0915319 51.5208155)'],
-  [17812, 'The Stratford Hotel',    '25th floor Sky Terrace',       'Queen Elizabeth Olympic Park','London',    'GB', 'https://tours.headbox.com/model/sbqA2mgkA1m',             'POINT (-0.0119217 51.5504457)'],
-  [16868, 'Searcys at The Gherkin', 'Private Dining',               '30 St Mary Axe',            'London',      'GB', 'https://tours.headbox.com/model/N2caHKwrUJU',             'POINT (-0.08025109999999999 51.5144054)'],
-  [16166, 'Kimpton Fitzroy London', 'Eliot',                        '1-8 Russell Square',        'London',      'GB', 'https://tours.headbox.com/model/rp6SXHU3T5H',             'POINT (-0.1247126 51.5226841)'],
-  [11711, 'Croke Park',             'Canal Room',                   "Jones's Road",              'Dublin',      'IE', 'https://tours.headbox.com/model/zFHPixJz1NU',             'POINT (-6.2530557 53.3612346)'],
-  [9332,  'The Postal Museum',      'Mail Rail',                    '15-20 Phoenix Place',       'London',      'GB', 'https://tours.headbox.com/model/t9zKyj2BVBs',             'POINT (-0.1139469 51.52476799999999)'],
-  [8792,  'Jin Bo Law Skybar',      'Jin Bo Law',                   '9 Aldgate High Street',     'London',      'GB', 'https://tours.headbox.com/model/3LVPz6vi2vA',             'POINT (-0.0760052 51.5141413)'],
-  [18644, 'The Design Museum',      'Sachs Family Park Room',       '224-238 Kensington High St','London',      'GB', 'https://tours.headbox.com/model/hZFM8tQ4Ymh',             'POINT (-0.2005903 51.4987001)'],
+  // London venues
+  { id: 55004, venueName: 'Alfi Spitalfields',       spaceName: 'Covered Terrace',             city: 'London',      country: 'GB', lat: 51.5198116,  lng: -0.0763757,  tourUrl: 'https://tours.headbox.com/model/222fa66KUnF' },
+  { id: 52417, venueName: 'Batch LDN',               spaceName: 'Batch LDN',                   city: 'London',      country: 'GB', lat: 51.5141032,  lng: -0.1264957,  tourUrl: 'https://tours.headbox.com/model/sFdX8GEcLFU' },
+  { id: 49585, venueName: 'Brunswick House',          spaceName: 'Smoking Room',                city: 'London',      country: 'GB', lat: 51.4847537,  lng: -0.1265278,  tourUrl: 'https://tours.headbox.com/model/T3orGfXaMPd' },
+  { id: 49261, venueName: 'The Ivy City Garden',      spaceName: 'The Oasis Bar',               city: 'London',      country: 'GB', lat: 51.5168266,  lng: -0.0827826,  tourUrl: 'https://my.matterport.com/show/?m=7N8YP97MJCL' },
+  { id: 49130, venueName: 'Bob Bob Ricard City',      spaceName: 'Red Private Dining Room',     city: 'London',      country: 'GB', lat: 51.5138619,  lng: -0.0823131,  tourUrl: 'https://my.matterport.com/show/?m=aKezmLQR6NK' },
+  { id: 49017, venueName: 'MR PORTER London',         spaceName: "Chef's Table",                city: 'London',      country: 'GB', lat: 51.5055575,  lng: -0.1500168,  tourUrl: 'https://tours.headbox.com/model/7Wx3XXawzhM' },
+  { id: 46742, venueName: 'Clays City',               spaceName: 'Exclusive Venue Hire',        city: 'London',      country: 'GB', lat: 51.5167974,  lng: -0.0893252,  tourUrl: 'https://tours.headbox.com/model/QDDQ9TctzbQ' },
+  { id: 45554, venueName: 'The Dixon, Tower Bridge',  spaceName: 'Courtroom Bar',               city: 'London',      country: 'GB', lat: 51.5021689,  lng: -0.0768266,  tourUrl: 'https://tours.headbox.com/model/6hSp9gBC8Gk' },
+  { id: 45328, venueName: 'City Cruises',             spaceName: 'Millennium City',             city: 'Rotherhithe', country: 'GB', lat: 51.500977,   lng: -0.061874,   tourUrl: 'https://tours.headbox.com/model/ZM79cZEh1yj' },
+  { id: 40307, venueName: 'Pergola on the Wharf',     spaceName: 'Restaurant',                  city: 'London',      country: 'GB', lat: 51.5060158,  lng: -0.0180659,  tourUrl: 'https://tours.headbox.com/model/kSHtNkHV375' },
+  { id: 37924, venueName: 'Protein Studios',          spaceName: 'Studio 4 + 5',               city: 'London',      country: 'GB', lat: 51.524554,   lng: -0.0781898,  tourUrl: 'https://tours.headbox.com/model/LK7bqrXNuCF' },
+  { id: 37217, venueName: 'Los Mochis',               spaceName: 'Bar & Lounge',                city: 'London',      country: 'GB', lat: 51.5085545,  lng: -0.1971296,  tourUrl: 'https://tours.headbox.com/model/VnoC19Y2RnJ' },
+  { id: 35934, venueName: 'The Ned London',           spaceName: 'The Wren Room',               city: 'London',      country: 'GB', lat: 51.5139059,  lng: -0.0896132,  tourUrl: 'https://tours.headbox.com/model/VbdKSe4BETd' },
+  { id: 35288, venueName: 'German Gymnasium',         spaceName: 'The Balcony',                 city: 'London',      country: 'GB', lat: 51.5323136,  lng: -0.1256072,  tourUrl: 'https://tours.headbox.com/model/tbMrGLFkwRj' },
+  { id: 29183, venueName: 'Le Pont De La Tour',       spaceName: 'Bar & Terrace',               city: 'London',      country: 'GB', lat: 51.5034648,  lng: -0.0731375,  tourUrl: 'https://tours.headbox.com/model/kJkFnPA9rJk' },
+  { id: 21846, venueName: 'Ham Yard Hotel',           spaceName: 'Ham Yard Theatre',            city: 'London',      country: 'GB', lat: 51.5112601,  lng: -0.134821,   tourUrl: 'https://tours.headbox.com/model/AWvL4ALKDoY' },
+  { id: 17982, venueName: 'The Brewery',              spaceName: 'The James Watt',              city: 'London',      country: 'GB', lat: 51.5208155,  lng: -0.0915319,  tourUrl: 'https://tours.headbox.com/model/8WZ8rvWaLYi' },
+  { id: 17812, venueName: 'The Stratford Hotel',      spaceName: '25th Floor Sky Terrace',      city: 'London',      country: 'GB', lat: 51.5504457,  lng: -0.0119217,  tourUrl: 'https://tours.headbox.com/model/sbqA2mgkA1m' },
+  { id: 16868, venueName: 'Searcys at The Gherkin',  spaceName: 'Private Dining',              city: 'London',      country: 'GB', lat: 51.5144054,  lng: -0.0802511,  tourUrl: 'https://tours.headbox.com/model/N2caHKwrUJU' },
+  { id: 16166, venueName: 'Kimpton Fitzroy London',   spaceName: 'Eliot',                       city: 'London',      country: 'GB', lat: 51.5226841,  lng: -0.1247126,  tourUrl: 'https://tours.headbox.com/model/rp6SXHU3T5H' },
+  { id: 9332,  venueName: 'The Postal Museum',        spaceName: 'Mail Rail',                   city: 'London',      country: 'GB', lat: 51.524768,   lng: -0.1139469,  tourUrl: 'https://tours.headbox.com/model/t9zKyj2BVBs' },
+  { id: 8792,  venueName: 'Jin Bo Law Skybar',        spaceName: 'Jin Bo Law',                  city: 'London',      country: 'GB', lat: 51.5141413,  lng: -0.0760052,  tourUrl: 'https://tours.headbox.com/model/3LVPz6vi2vA' },
+  { id: 18644, venueName: 'The Design Museum',        spaceName: 'Sachs Family Park Room',      city: 'London',      country: 'GB', lat: 51.4987001,  lng: -0.2005903,  tourUrl: 'https://tours.headbox.com/model/hZFM8tQ4Ymh' },
+  { id: 38506, venueName: 'The Drum Wembley',         spaceName: 'Boardroom',                   city: 'Wembley',     country: 'GB', lat: 51.5586038,  lng: -0.2816834,  tourUrl: 'https://tours.headbox.com/model/vhbakGgGSow' },
+  { id: 'pgb', venueName: 'Pergola Brixton',          spaceName: 'Brixton Village',             city: 'London',      country: 'GB', lat: 51.46593,    lng: -0.10652,    tourUrl: 'https://my.matterport.com/show/?m=j7NNCJPAUQ6' },
+  { id: 'som', venueName: 'River Terrace',            spaceName: 'Somerset House',              city: 'London',      country: 'GB', lat: 51.5116948,  lng: -0.117442,   tourUrl: 'https://my.matterport.com/show/?m=vnV9a1pKDgV' },
+  { id: 'gin', venueName: 'Guinness Open Gate Brewery', spaceName: 'London',                    city: 'London',      country: 'GB', lat: 51.5132472,  lng: -0.1255247,  tourUrl: 'https://my.matterport.com/show/?m=iXYe89XbtEy' },
+
+  // Outside London
+  { id: 47862, venueName: 'McLarens on the Corner',   spaceName: 'Full Venue Hire',             city: 'Edinburgh',   country: 'GB', lat: 55.9343102,  lng: -3.2105239,  tourUrl: 'https://tours.headbox.com/model/MNng6dMaBYz' },
+  { id: 47860, venueName: 'Badger & Co.',             spaceName: 'The Lounge',                  city: 'Edinburgh',   country: 'GB', lat: 55.9520364,  lng: -3.2036173,  tourUrl: 'https://tours.headbox.com/model/9FiQftGgzPp' },
+  { id: 47631, venueName: 'F1 Arcade Birmingham',     spaceName: 'The Terrace',                 city: 'Birmingham',  country: 'GB', lat: 52.4798612,  lng: -1.9056346,  tourUrl: 'https://tours.headbox.com/model/2SvEBekPz5D' },
+  { id: 11711, venueName: 'Croke Park',               spaceName: 'Canal Room',                  city: 'Dublin',      country: 'IE', lat: 53.3612346,  lng: -6.2530557,  tourUrl: 'https://tours.headbox.com/model/zFHPixJz1NU' },
+  { id: 'bth', venueName: 'The Roman Baths & Pump Room', spaceName: 'Roman Baths',             city: 'Bath',        country: 'GB', lat: 51.3811264,  lng: -2.3599906,  tourUrl: 'https://my.matterport.com/show/?m=yXuA5RSbEUW' },
+  { id: 'mrf', venueName: 'Murrayfield Stadium',      spaceName: 'Murrayfield',                 city: 'Edinburgh',   country: 'GB', lat: 55.9423133,  lng: -3.2408951,  tourUrl: 'https://my.matterport.com/show/?m=hTmooxrgF2e' },
+  { id: 'gls', venueName: 'Gloster House & Gardens',  spaceName: 'Gloster House',               city: 'Offaly',      country: 'IE', lat: 53.09139,    lng: -7.91333,    tourUrl: 'https://my.matterport.com/show/?m=Fo53Geq4j4r' },
+  { id: 'icc', venueName: 'International Convention Centre', spaceName: 'Centenary Square',    city: 'Birmingham',  country: 'GB', lat: 52.4790625,  lng: -1.9109476,  tourUrl: 'https://my.matterport.com/show/?m=jHZcZqKpheX' },
+  { id: 'bgh', venueName: 'Brighton Harbour Hotel',   spaceName: '64 Kings Road',               city: 'Brighton',    country: 'GB', lat: 50.820736,   lng: -0.1444634,  tourUrl: 'https://my.matterport.com/show/?m=fowDyvQ2wbZ' },
+  { id: 'cls', venueName: 'Castle Leslie',            spaceName: 'Castle Leslie Estate',        city: 'County Monaghan', country: 'IE', lat: 54.3202883, lng: -6.8919796, tourUrl: 'https://my.matterport.com/show/?m=AYBe72vW3hM' },
 ];
 
+// Venues outside Greater London (city !== 'London' and city !== 'Rotherhithe' and city !== 'Wembley')
+const LONDON_CITIES = new Set(['London', 'Rotherhithe', 'Wembley']);
+
+export const LONDON_VENUES   = UK_IRELAND_RAW.filter(v => LONDON_CITIES.has(v.city));
+export const OUTSIDE_VENUES  = UK_IRELAND_RAW.filter(v => !LONDON_CITIES.has(v.city));
+
 export const VENUES_BY_LEVEL = {
-  1: UK_IRELAND_RAW.map((r, i) => {
-    const { lat, lng } = parsePoint(r[7]);
-    return {
-      id: r[0],
-      venueName: r[1],
-      spaceName: r[2],
-      address: r[3],
-      city: r[4],
-      country: r[5],
-      lat,
-      lng,
-      tourUrl: r[6],
-    };
-  }),
-  // Levels 2-5 will be populated later — use empty arrays for now
+  1: UK_IRELAND_RAW,
   2: [],
   3: [],
   4: [],

@@ -55,14 +55,14 @@ export default function Leaderboard({ highlightEmail }) {
       <div className="flex items-center justify-between px-5 py-4 border-b border-hb-border">
         <div className="flex items-center gap-2">
           <Trophy size={16} className="text-yellow-400" />
-          <h2 className="text-white font-bold text-sm uppercase tracking-widest">Leaderboard</h2>
+          <h2 className="text-white font-bold text-sm">Leaderboard</h2>
         </div>
         <div className="flex items-center gap-1 bg-hb-surface-2 rounded-hb-md p-0.5">
           {FILTERS.map(f => (
             <button
               key={f.value}
               onClick={() => setFilter(f.value)}
-              className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded transition-colors duration-150 ${
+              className={`px-3 py-1 text-xs font-bold rounded transition-colors duration-150 ${
                 filter === f.value
                   ? 'bg-hb-red text-white'
                   : 'text-hb-text-muted hover:text-white'
@@ -111,7 +111,7 @@ export default function Leaderboard({ highlightEmail }) {
                     {entry.player_name}
                     {isHighlighted && <span className="text-hb-red text-xs ml-1">(you)</span>}
                   </p>
-                  <p className="text-hb-text-muted text-xs">{entry.rounds_played} rounds</p>
+                  <p className="text-hb-text-muted text-xs">{Math.min(entry.rounds_played, 3)} rounds</p>
                 </div>
 
                 <div className="text-right shrink-0">

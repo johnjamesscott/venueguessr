@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { VENUES_BY_LEVEL, LEVELS } from '@/data/venues';
+import { VENUES_BY_LEVEL, LEVELS, LONDON_VENUES, OUTSIDE_VENUES } from '@/data/venues';
 import { calculateDistance, shuffleArray } from '@/utils/distance';
 import { calculateScore } from '@/utils/scoring';
 import { base44 } from '@/api/base44Client';
@@ -55,10 +55,26 @@ export default function Game() {
   const startGame = useCallback((levelId = 1) => {
     unlockAudio();
     setSelectedLevel(levelId);
-    const venues = VENUES_BY_LEVEL[levelId] || VENUES_BY_LEVEL[1];
-    const shuffled = shuffleArray(venues);
-    setShuffledVenues(shuffled.slice(0, TOTAL_ROUNDS));
-    setVenuePool(shuffled.slice(TOTAL_ROUNDS));
+
+    // For level 1: guarantee at least 1 outside-London venue in the 3 rounds
+    let selected;
+    if (levelId === 1 && OUTSIDE_VENUES.length > 0) {
+      const outsideShuffled = shuffleArray(OUTSIDE_VENUES);
+      const londonShuffled = shuffleArray(LONDON_VENUES);
+      // Pick 1 outside + 2 London, then shuffle the trio
+      const trio = shuffleArray([outsideShuffled[0], londonShuffled[0], londonShuffled[1]]);
+      // Remaining venues for the fallback pool
+      const pool = [...outsideShuffled.slice(1), ...londonShuffled.slice(2)];
+      selected = trio;
+      setShuffledVenues(selected);
+      setVenuePool(shuffleArray(pool));
+    } else {
+      const venues = VENUES_BY_LEVEL[levelId] || VENUES_BY_LEVEL[1];
+      const shuffled = shuffleArray(venues);
+      selected = shuffled.slice(0, TOTAL_ROUNDS);
+      setShuffledVenues(selected);
+      setVenuePool(shuffled.slice(TOTAL_ROUNDS));
+    }
     setCurrentRoundIndex(0);
     setResults([]);
     setCurrentGuess(null);
@@ -69,7 +85,7 @@ export default function Game() {
     setPreRoundCountdown(true);
     setShowCelebration(false);
     setGameState(GAME_STATES.PLAYING);
-  }, []);
+  }, [OUTSIDE_VENUES, LONDON_VENUES]);
 
   const handleTourError = useCallback(() => {
     setVenuePool(pool => {
