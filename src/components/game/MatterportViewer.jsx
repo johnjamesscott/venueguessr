@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { getEmbedUrl } from '@/data/venues';
 
-export default function MatterportViewer({ tourUrl, onError }) {
+export default function MatterportViewer({ tourUrl, nextTourUrl, onError }) {
   const embedUrl = getEmbedUrl(tourUrl);
+  const nextEmbedUrl = getEmbedUrl(nextTourUrl);
   const iframeRef = useRef(null);
   const [errored, setErrored] = useState(false);
 
@@ -83,6 +84,18 @@ export default function MatterportViewer({ tourUrl, onError }) {
           borderBottomRightRadius: '8px',
         }}
       />
+
+      {/* Hidden preload iframe for next venue */}
+      {nextEmbedUrl && (
+        <iframe
+          key={nextEmbedUrl}
+          src={nextEmbedUrl}
+          className="border-0"
+          style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none', left: -9999 }}
+          allow="xr-spatial-tracking"
+          title="Preload next venue"
+        />
+      )}
     </div>
   );
 }

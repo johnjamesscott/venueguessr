@@ -234,7 +234,11 @@ export default function Game() {
       {gameState === GAME_STATES.PLAYING && currentVenue && (
         <div className="fixed inset-0">
           {/* Tour: full screen */}
-          <MatterportViewer tourUrl={currentVenue.tourUrl} onError={handleTourError} />
+          <MatterportViewer
+            tourUrl={currentVenue.tourUrl}
+            nextTourUrl={shuffledVenues[currentRoundIndex + 1]?.tourUrl}
+            onError={handleTourError}
+          />
           {preRoundCountdown && (
             <PreRoundCountdown onComplete={handlePreRoundComplete} />
           )}
