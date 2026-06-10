@@ -97,7 +97,7 @@ export default function ArcadeMapControls({ onPan, onZoom, timerSeconds, timerAc
         width: '50vw',
         display: 'flex',
         justifyContent: 'center',
-        transform: 'translateY(-50%)',
+        transform: 'translateY(-70%)',
         pointerEvents: 'auto',
       }}>
         <div style={{

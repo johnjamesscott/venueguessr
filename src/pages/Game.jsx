@@ -283,7 +283,7 @@ export default function Game() {
           </div>
 
           {/* Controls — lifted to root stacking context, above map */}
-          <div style={{ position: 'absolute', bottom: '40vh', left: 0, right: 0, zIndex: 20, pointerEvents: 'none' }}>
+          <div style={{ position: 'absolute', top: '55%', left: 0, right: 0, zIndex: 20, pointerEvents: 'none' }}>
             <ArcadeMapControls
               onPan={handlePan}
               onZoom={handleZoom}
