@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { VENUES_BY_LEVEL, LEVELS, LONDON_VENUES, OUTSIDE_VENUES } from '@/data/venues';
 import { calculateDistance, shuffleArray } from '@/utils/distance';
 import { calculateScore } from '@/utils/scoring';
@@ -14,8 +14,8 @@ import {
 import SplashScreen from '@/components/game/SplashScreen/SplashScreen';
 import GameHeader from '@/components/game/GameHeader';
 import MatterportViewer from '@/components/game/MatterportViewer';
-import CountdownTimer from '@/components/game/CountdownTimer';
 import GuessMap from '@/components/game/GuessMap';
+import ArcadeMapControls from '@/components/game/ArcadeMapControls';
 import RoundResult from '@/components/game/RoundResult';
 import ContactForm from '@/components/game/ContactForm';
 import GameSummary from '@/components/game/GameSummary';
@@ -197,6 +197,23 @@ export default function Game() {
     setGameState(GAME_STATES.SUMMARY);
   }, []);
 
+  const mapRef = useRef(null);
+
+  const handlePan = useCallback((dir) => {
+    const map = mapRef.current;
+    if (!map) return;
+    const PAN = 80;
+    const offsets = { up: [0, -PAN], down: [0, PAN], left: [-PAN, 0], right: [PAN, 0] };
+    map.panBy(offsets[dir], { animate: true, duration: 0.3 });
+  }, []);
+
+  const handleZoom = useCallback((direction) => {
+    const map = mapRef.current;
+    if (!map) return;
+    const current = map.getZoom();
+    map.setZoom(direction === 'in' ? current + 1 : current - 1, { animate: true });
+  }, []);
+
   const currentVenue = shuffledVenues[currentRoundIndex];
   const isLastRound = currentRoundIndex >= shuffledVenues.length - 1;
 
@@ -220,7 +237,7 @@ export default function Game() {
   if (gameState === GAME_STATES.CONTACT) {
     return (
       <div className="min-h-screen bg-hb-bg">
-        <GameHeader />
+        <GameHeader level={selectedLevel} />
         <ContactForm onSubmit={handleContactSubmit} onSkip={handleContactSkip} />
       </div>
     );
@@ -230,54 +247,76 @@ export default function Game() {
     <div className="bg-hb-bg flex flex-col" style={{ minHeight: '100dvh' }}>
       <CelebrationOverlay active={showCelebration} />
 
-      {/* PLAYING — full-screen tour with overlaid header and bottom panel */}
+      {/* PLAYING — mobile-first arcade layout */}
       {gameState === GAME_STATES.PLAYING && currentVenue && (
-        <div className="fixed inset-0">
-          {/* Tour: full screen */}
-          <MatterportViewer
-            tourUrl={currentVenue.tourUrl}
-            nextTourUrl={shuffledVenues[currentRoundIndex + 1]?.tourUrl}
-            onError={handleTourError}
-          />
-          {preRoundCountdown && (
-            <PreRoundCountdown onComplete={handlePreRoundComplete} />
-          )}
+        <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', background: '#121212' }}>
+          {/* Header */}
+          <GameHeader level={selectedLevel} />
 
-          {/* Header overlay — top, 12px from edges */}
-          <div className="absolute top-0 left-0 right-0 z-50" style={{ padding: '12px' }}>
-            <GameHeader />
+          {/* Tour — fills remaining space */}
+          <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+            <MatterportViewer
+              tourUrl={currentVenue.tourUrl}
+              nextTourUrl={shuffledVenues[currentRoundIndex + 1]?.tourUrl}
+              onError={handleTourError}
+            />
+            {preRoundCountdown && (
+              <PreRoundCountdown onComplete={handlePreRoundComplete} />
+            )}
           </div>
 
-          {/* Bottom overlay — map + timer, 33vh, 12px from edges */}
-          <div
-            className="absolute bottom-0 left-0 right-0 z-50 flex gap-3"
-            style={{ padding: '0 12px 12px 12px', height: '33vh' }}
-          >
-            {/* Map */}
-            <div className="flex-1 relative rounded-xl overflow-hidden shadow-2xl">
-              <GuessMap
-                onGuessPlaced={handleGuessPlaced}
-                guessLocked={guessLocked}
-                currentGuess={currentGuess}
-                onLockGuess={() => lockGuess(currentGuess)}
-                fill
-                mapCenter={selectedLevel === 1 ? [54.5, -3.5] : undefined}
-                mapZoom={selectedLevel === 1 ? 5 : undefined}
-              />
-            </div>
+          {/* Map — fixed height strip */}
+          <div style={{ position: 'relative', height: '28vh', flexShrink: 0, borderTop: '2px solid #2a2a2a' }}>
+            <GuessMap
+              onGuessPlaced={handleGuessPlaced}
+              guessLocked={guessLocked}
+              currentGuess={currentGuess}
+              onLockGuess={() => lockGuess(currentGuess)}
+              fill
+              mapCenter={selectedLevel === 1 ? [54.5, -3.5] : undefined}
+              mapZoom={selectedLevel === 1 ? 5 : undefined}
+              mapRef={mapRef}
+            />
+          </div>
 
-            {/* Timer + level panel */}
-            <div className="flex flex-col items-center justify-center bg-white rounded-xl shadow-2xl px-5 py-4 shrink-0 gap-2" style={{ minWidth: '160px' }}>
-              <p className="text-gray-800 font-black text-sm leading-tight text-center">
-                Level {selectedLevel}: {LEVELS.find(l => l.id === selectedLevel)?.name || 'UK and Ireland'}
-              </p>
-              <CountdownTimer
-                key={currentRoundIndex}
-                seconds={ROUND_SECONDS}
-                onExpire={handleTimerExpire}
-                isActive={timerActive}
-              />
+          {/* Lock-in button */}
+          {!guessLocked && currentGuess && (
+            <div style={{ padding: '8px 16px 0', flexShrink: 0, background: '#1a1a1a' }}>
+              <button
+                onClick={() => lockGuess(currentGuess)}
+                style={{
+                  width: '100%',
+                  height: 52,
+                  background: '#AF231C',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 50,
+                  fontFamily: 'Montserrat, sans-serif',
+                  fontWeight: 700,
+                  fontSize: 15,
+                  letterSpacing: '0.5px',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 0 rgba(0,0,0,0.3), 0 6px 16px rgba(175,35,28,0.4)',
+                  textTransform: 'uppercase',
+                  WebkitTapHighlightColor: 'transparent',
+                  touchAction: 'manipulation',
+                }}
+              >
+                Lock in your guess
+              </button>
             </div>
+          )}
+
+          {/* Arcade controls — D-pad + timer + zoom */}
+          <div style={{ height: 172, background: '#1a1a1a', flexShrink: 0, borderTop: '2px solid #2a2a2a' }}>
+            <ArcadeMapControls
+              onPan={handlePan}
+              onZoom={handleZoom}
+              timerSeconds={ROUND_SECONDS}
+              timerActive={timerActive}
+              onTimerExpire={handleTimerExpire}
+              roundIndex={currentRoundIndex}
+            />
           </div>
         </div>
       )}
@@ -285,7 +324,7 @@ export default function Game() {
       {/* ROUND RESULT */}
       {gameState === GAME_STATES.ROUND_RESULT && currentVenue && (
         <div className="flex flex-col" style={{ minHeight: '100dvh' }}>
-          <GameHeader />
+          <GameHeader level={selectedLevel} />
           <div className="flex-1 p-3 md:p-4">
             <RoundResult
               roundNumber={currentRoundIndex + 1}

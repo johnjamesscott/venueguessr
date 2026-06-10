@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -33,8 +33,16 @@ function ClickHandler({ onMapClick }) {
   return null;
 }
 
-// The map fills its container — height is controlled by the parent
-export default function GuessMap({ onGuessPlaced, guessLocked, currentGuess, onLockGuess, height, fill, mapCenter, mapZoom }) {
+// Exposes pan/zoom control to parent via mapRef
+function MapController({ mapRef }) {
+  const map = useMap();
+  useEffect(() => {
+    if (mapRef) mapRef.current = map;
+  }, [map, mapRef]);
+  return null;
+}
+
+export default function GuessMap({ onGuessPlaced, guessLocked, currentGuess, onLockGuess, height, fill, mapCenter, mapZoom, mapRef }) {
   const [markerPos, setMarkerPos] = useState(null);
 
   useEffect(() => {
@@ -57,37 +65,27 @@ export default function GuessMap({ onGuessPlaced, guessLocked, currentGuess, onL
         center={mapCenter || [20, 0]}
         zoom={mapZoom || 2}
         style={{ width: '100%', height: '100%', background: '#e8e8e8' }}
-        zoomControl={true}
+        zoomControl={false}
         attributionControl={false}
         minZoom={1}
         maxZoom={18}
       >
         <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" attribution="" />
         <ClickHandler onMapClick={handleMapClick} />
+        <MapController mapRef={mapRef} />
         {markerPos && <Marker position={markerPos} icon={hbIcon} />}
       </MapContainer>
 
-      {/* Bottom CTA — changes once pin placed */}
-      {!guessLocked && (
-        <div className="absolute bottom-0 left-0 right-0 z-[1000] p-3">
-          {markerPos ? (
-            <button
-              onClick={onLockGuess}
-              className="w-full bg-hb-red hover:bg-hb-red-dark text-white font-bold uppercase tracking-widest text-sm py-3 rounded-full transition-colors duration-200 shadow-lg"
-            >
-              Lock in your guess
-            </button>
-          ) : (
-            <div className="flex justify-center">
-              <div className="flex items-center gap-2 bg-white/95 text-gray-700 text-xs font-semibold px-4 py-2.5 rounded-full shadow-lg border border-gray-200 pointer-events-none">
-                <svg width="12" height="16" viewBox="0 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M16 0C7.163 0 0 7.163 0 16c0 10 16 26 16 26s16-16 16-26C32 7.163 24.837 0 16 0z" fill="#AF231C"/>
-                  <circle cx="16" cy="15" r="5.5" fill="white"/>
-                </svg>
-                Click to place your pin
-              </div>
-            </div>
-          )}
+      {/* Place your pin hint */}
+      {!guessLocked && !markerPos && (
+        <div className="absolute bottom-3 left-0 right-0 z-[1000] flex justify-center pointer-events-none">
+          <div className="flex items-center gap-2 bg-white/95 text-gray-700 text-xs font-semibold px-4 py-2.5 rounded-full shadow-lg border border-gray-200">
+            <svg width="12" height="16" viewBox="0 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M16 0C7.163 0 0 7.163 0 16c0 10 16 26 16 26s16-16 16-26C32 7.163 24.837 0 16 0z" fill="#AF231C"/>
+              <circle cx="16" cy="15" r="5.5" fill="white"/>
+            </svg>
+            Tap to place your pin
+          </div>
         </div>
       )}
     </div>
