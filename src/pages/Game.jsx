@@ -257,7 +257,7 @@ export default function Game() {
           </div>
 
           {/* Tour — full bleed from header to bottom, behind map */}
-          <div style={{ position: 'absolute', top: 60, left: 0, right: 0, bottom: 0, zIndex: 1, overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: 60, left: 0, right: 0, bottom: 0, zIndex: -10, overflow: 'hidden' }}>
             <MatterportViewer
               tourUrl={currentVenue.tourUrl}
               nextTourUrl={shuffledVenues[currentRoundIndex + 1]?.tourUrl}
@@ -268,8 +268,8 @@ export default function Game() {
             )}
           </div>
 
-          {/* Map — positioned over bottom 48vh of tour, overflow visible so timer straddles */}
-          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '48vh', zIndex: 10, overflow: 'visible' }}>
+          {/* Map — positioned over bottom 40vh of tour, overflow visible so timer straddles */}
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '40vh', zIndex: 0, overflow: 'visible' }}>
             {/* Leaflet map clipped to its own bounds */}
             <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', borderTop: '2px solid #2a2a2a' }}>
               <GuessMap

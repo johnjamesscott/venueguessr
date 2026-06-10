@@ -69,7 +69,7 @@ export default function ArcadeMapControls({ onPan, onZoom, timerSeconds, timerAc
       display: 'flex',
       alignItems: 'flex-start',
       pointerEvents: 'none',
-      zIndex: 100,
+      zIndex: 10,
     }}>
 
       {/* D-pad — 25vw, sits on the map only */}
