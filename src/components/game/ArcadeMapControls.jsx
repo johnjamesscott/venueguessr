@@ -62,14 +62,10 @@ const TIMER_BG = 132;
 export default function ArcadeMapControls({ onPan, onZoom, timerSeconds, timerActive, onTimerExpire, roundIndex }) {
   return (
     <div style={{
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
       display: 'flex',
       alignItems: 'flex-start',
       pointerEvents: 'none',
-      zIndex: 10,
+      width: '100%',
     }}>
 
       {/* D-pad — 25vw, sits on the map only */}

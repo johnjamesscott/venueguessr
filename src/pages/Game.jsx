@@ -268,22 +268,22 @@ export default function Game() {
             )}
           </div>
 
-          {/* Map — positioned over bottom 40vh of tour, overflow visible so timer straddles */}
-          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '40vh', zIndex: 0, overflow: 'visible' }}>
-            {/* Leaflet map clipped to its own bounds */}
-            <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', borderTop: '2px solid #2a2a2a' }}>
-              <GuessMap
-                onGuessPlaced={handleGuessPlaced}
-                guessLocked={guessLocked}
-                currentGuess={currentGuess}
-                onLockGuess={() => lockGuess(currentGuess)}
-                fill
-                mapCenter={selectedLevel === 1 ? [54.5, -3.5] : undefined}
-                mapZoom={selectedLevel === 1 ? 5 : undefined}
-                mapRef={mapRef}
-              />
-            </div>
-            {/* Controls: D-pad left, timer straddling centre, zoom right */}
+          {/* Map — positioned over bottom 40vh of tour */}
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '40vh', zIndex: 0, overflow: 'hidden', borderTop: '2px solid #2a2a2a' }}>
+            <GuessMap
+              onGuessPlaced={handleGuessPlaced}
+              guessLocked={guessLocked}
+              currentGuess={currentGuess}
+              onLockGuess={() => lockGuess(currentGuess)}
+              fill
+              mapCenter={selectedLevel === 1 ? [54.5, -3.5] : undefined}
+              mapZoom={selectedLevel === 1 ? 5 : undefined}
+              mapRef={mapRef}
+            />
+          </div>
+
+          {/* Controls — lifted to root stacking context, above map */}
+          <div style={{ position: 'absolute', bottom: '40vh', left: 0, right: 0, zIndex: 20, pointerEvents: 'none' }}>
             <ArcadeMapControls
               onPan={handlePan}
               onZoom={handleZoom}
