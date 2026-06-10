@@ -6,6 +6,7 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Game from './pages/Game';
+import VirtualKeyboard from './components/game/VirtualKeyboard';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -42,6 +43,7 @@ function App() {
         <Router>
           <AuthenticatedApp />
         </Router>
+        <VirtualKeyboard />
         <Toaster />
       </QueryClientProvider>
     </AuthProvider>

@@ -67,6 +67,12 @@
   border-radius: 2px;
 }
 
+/* Prevent touch zoom on input focus (kiosk) */
+input, textarea, select {
+  font-size: 16px !important;
+  touch-action: manipulation;
+}
+
 /* Map container */
 .leaflet-container {
   background: #1a1a1a !important;
