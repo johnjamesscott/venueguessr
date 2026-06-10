@@ -90,8 +90,18 @@ export default function ArcadeMapControls({ onPan, onZoom, timerSeconds, timerAc
         </div>
       </div>
 
-      {/* Timer — centre */}
-      <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      {/* Timer — centre with circle background */}
+      <div style={{ 
+        flex: 1, 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center',
+        width: 180,
+        height: 180,
+        background: '#1f1f1f',
+        borderRadius: '50%',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.4)'
+      }}>
         <CountdownTimer
           key={roundIndex}
           seconds={timerSeconds}

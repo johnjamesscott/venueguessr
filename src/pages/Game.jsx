@@ -253,8 +253,8 @@ export default function Game() {
           {/* Header */}
           <GameHeader level={selectedLevel} round={currentRoundIndex + 1} totalRounds={TOTAL_ROUNDS} />
 
-          {/* Tour — fills remaining space */}
-          <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+          {/* Tour — full bleed 100vh 100vw */}
+          <div style={{ position: 'absolute', top: 60, left: 0, right: 0, bottom: '48vh', width: '100vw', height: 'calc(100vh - 60px - 48vh)', overflow: 'hidden' }}>
             <MatterportViewer
               tourUrl={currentVenue.tourUrl}
               nextTourUrl={shuffledVenues[currentRoundIndex + 1]?.tourUrl}
@@ -266,7 +266,7 @@ export default function Game() {
           </div>
 
           {/* Map + overlaid controls */}
-          <div style={{ position: 'relative', height: '48vh', flexShrink: 0, borderTop: '2px solid #2a2a2a' }}>
+          <div style={{ position: 'relative', height: '48vh', flexShrink: 0, borderTop: '2px solid #2a2a2a', marginTop: 'auto' }}>
             <GuessMap
               onGuessPlaced={handleGuessPlaced}
               guessLocked={guessLocked}
@@ -277,8 +277,8 @@ export default function Game() {
               mapZoom={selectedLevel === 1 ? 5 : undefined}
               mapRef={mapRef}
             />
-            {/* Arcade controls overlaid at top of map */}
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1000, pointerEvents: 'none' }}>
+            {/* Timer overlaid at 50% between tour and map */}
+            <div style={{ position: 'absolute', top: '-60px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, pointerEvents: 'none' }}>
               <div style={{ pointerEvents: 'auto' }}>
                 <ArcadeMapControls
                   onPan={handlePan}
