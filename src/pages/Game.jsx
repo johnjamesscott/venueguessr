@@ -11,7 +11,7 @@ import {
   playErrorSound,
 } from '@/utils/sounds';
 
-import SplashScreen from '@/components/game/SplashScreen';
+import SplashScreen from '@/components/game/SplashScreen/SplashScreen';
 import GameHeader from '@/components/game/GameHeader';
 import MatterportViewer from '@/components/game/MatterportViewer';
 import CountdownTimer from '@/components/game/CountdownTimer';
