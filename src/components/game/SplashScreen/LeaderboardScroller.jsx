@@ -6,7 +6,7 @@ const MEDAL = ['🥇', '🥈', '🥉'];
 const PAGE_SIZE = 4;
 
 async function fetchLeaderboard() {
-  const entries = await base44.entities.LeaderboardEntry.list('-total_score', 10);
+  const entries = await base44.entities.LeaderboardEntry.list('-total_score', 12);
   return entries;
 }
 

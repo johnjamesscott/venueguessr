@@ -171,11 +171,11 @@ export default function SplashScreen({ onStart }) {
         .splash-btn:active { transform: scale(0.95) !important; }
 
         @media (max-height: 750px) {
-          .splash-globe-wrapper { width: 560px !important; height: 560px !important; }
+          .splash-globe-wrapper { width: 900px !important; height: 900px !important; }
           .splash-title { font-size: 36px !important; }
         }
         @media (max-height: 600px) {
-          .splash-globe-wrapper { width: 420px !important; height: 420px !important; }
+          .splash-globe-wrapper { width: 700px !important; height: 700px !important; }
           .splash-title { font-size: 28px !important; }
         }
       `}</style>
@@ -195,19 +195,27 @@ export default function SplashScreen({ onStart }) {
           </a>
         </div>
 
-        {/* Main — globe (4× bigger) with title overlaid */}
+        {/* Main — globe with title overlaid absolutely */}
         <div style={styles.main}>
-          <div style={styles.globeContainer}>
-            {/* Globe: 200 × 4 = 800px base */}
+          <div style={{ position: 'relative', width: '100%', display: 'flex', justifyContent: 'center' }}>
+            {/* Globe */}
             <div
               className="splash-globe-wrapper"
-              style={{ width: 700, height: 700, position: 'relative' }}
+              style={{ width: 1400, height: 1400, position: 'relative', flexShrink: 0 }}
             >
-              <SplineGlobe size={700} />
+              <SplineGlobe size={1400} />
             </div>
 
-            {/* Title + subtitle overlaid on top of globe */}
-            <div style={styles.titleOverlay}>
+            {/* Title + subtitle absolutely centred over the globe bottom half */}
+            <div style={{
+              position: 'absolute',
+              bottom: 60,
+              left: 0,
+              right: 0,
+              textAlign: 'center',
+              zIndex: 20,
+              pointerEvents: 'none',
+            }}>
               <h1 className="splash-title" style={styles.title}>VenueGuessr</h1>
               <p className="splash-subtitle" style={styles.subtitle}>Test your venue knowledge</p>
               <p className="splash-tagline" style={styles.tagline}>Drop in. Place a pin. Play to win.</p>
