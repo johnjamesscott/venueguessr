@@ -2,7 +2,7 @@ import React from 'react';
 import SplineGlobe from './SplineGlobe';
 import LeaderboardScroller from './LeaderboardScroller';
 
-const GRID_SVG = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cpath d='M 60 0 L 0 0 0 60' fill='none' stroke='%236B1515' stroke-width='0.7' opacity='0.6'/%3E%3C/svg%3E")`;
+const BG_IMAGE = 'https://media.base44.com/images/public/69fb297293cfcce3424dad36/78e67546d_iPhone17-211.png';
 
 const styles = {
   container: {
@@ -13,25 +13,18 @@ const styles = {
     overflow: 'hidden',
     display: 'flex',
     flexDirection: 'column',
-    background: 'linear-gradient(160deg, #8B1A1A 0%, #5C0F0F 60%, #3a0808 100%)',
+    backgroundImage: `url(${BG_IMAGE})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center top',
+    backgroundRepeat: 'no-repeat',
     fontFamily: 'Montserrat, sans-serif',
     WebkitTapHighlightColor: 'transparent',
     animation: 'fadeIn 0.6s ease-out both',
   },
-  grid: {
-    position: 'absolute',
-    inset: 0,
-    backgroundImage: GRID_SVG,
-    backgroundSize: '60px 60px',
-    transform: 'perspective(600px) rotateX(20deg) scaleY(1.3)',
-    transformOrigin: 'bottom center',
-    opacity: 0.5,
-    pointerEvents: 'none',
-  },
   scanlines: {
     position: 'absolute',
     inset: 0,
-    backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.07) 2px, rgba(0,0,0,0.07) 4px)',
+    backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px)',
     pointerEvents: 'none',
     zIndex: 1,
   },
@@ -40,17 +33,9 @@ const styles = {
     zIndex: 10,
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '12px 16px',
+    justifyContent: 'center',
+    padding: '20px 16px 8px',
     animation: 'slideDownIn 0.8s ease-out 0.1s both',
-  },
-  branding: {
-    fontSize: 14,
-    fontWeight: 600,
-    color: '#fff',
-    letterSpacing: '2px',
-    textTransform: 'uppercase',
-    opacity: 0.9,
   },
   main: {
     flex: 1,
@@ -61,32 +46,49 @@ const styles = {
     position: 'relative',
     zIndex: 10,
     padding: '0 16px',
-    gap: 12,
+    gap: 0,
     animation: 'slideUpIn 0.8s ease-out 0.2s both',
     minHeight: 0,
   },
+  globeContainer: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  titleOverlay: {
+    position: 'absolute',
+    bottom: 16,
+    left: 0,
+    right: 0,
+    textAlign: 'center',
+    zIndex: 20,
+    pointerEvents: 'none',
+  },
   title: {
-    fontSize: 48,
+    fontSize: 42,
     fontWeight: 900,
     color: '#fff',
     letterSpacing: '1px',
     margin: 0,
     lineHeight: 1.05,
-    textShadow: '0 2px 20px rgba(255,68,68,0.4)',
+    textShadow: '0 2px 24px rgba(0,0,0,0.8), 0 0 40px rgba(255,68,68,0.5)',
     animation: 'fadeInScale 0.8s ease-out 0.3s both',
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: 400,
-    color: 'rgba(255,255,255,0.75)',
-    margin: 0,
+    color: 'rgba(255,255,255,0.8)',
+    margin: '10px 0 0',
+    textShadow: '0 1px 8px rgba(0,0,0,0.6)',
   },
   tagline: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: 500,
-    color: 'rgba(255,255,255,0.5)',
-    margin: 0,
+    color: 'rgba(255,255,255,0.55)',
+    margin: '4px 0 0',
     letterSpacing: '0.3px',
+    textShadow: '0 1px 6px rgba(0,0,0,0.5)',
   },
   ctaSection: {
     position: 'relative',
@@ -107,13 +109,12 @@ const styles = {
     padding: '14px 48px',
     cursor: 'pointer',
     letterSpacing: '0.5px',
-    boxShadow: '0 4px 20px rgba(0,0,0,0.3), 0 0 20px rgba(255,255,255,0.15)',
+    boxShadow: '0 4px 20px rgba(0,0,0,0.4), 0 0 20px rgba(255,255,255,0.15)',
     transition: 'transform 0.1s ease, box-shadow 0.1s ease',
     WebkitTapHighlightColor: 'transparent',
     minHeight: 44,
     touchAction: 'manipulation',
     textTransform: 'uppercase',
-    textDecoration: 'none',
     display: 'inline-flex',
     alignItems: 'center',
   },
@@ -167,51 +168,51 @@ export default function SplashScreen({ onStart }) {
           0%, 100% { box-shadow: 0 0 24px 6px rgba(175,35,28,0.55), 0 0 60px 10px rgba(175,35,28,0.25); }
           50% { box-shadow: 0 0 40px 12px rgba(175,35,28,0.8), 0 0 80px 20px rgba(175,35,28,0.4); }
         }
-        @keyframes shimmer {
-          0% { background-position: -200px 0; }
-          100% { background-position: calc(200px + 100%) 0; }
-        }
         .splash-btn:active { transform: scale(0.95) !important; }
 
-        @media (max-height: 667px) {
-          .splash-globe-wrapper { width: 150px !important; height: 150px !important; }
-          .splash-title { font-size: 40px !important; }
+        @media (max-height: 750px) {
+          .splash-globe-wrapper { width: 560px !important; height: 560px !important; }
+          .splash-title { font-size: 36px !important; }
         }
         @media (max-height: 600px) {
-          .splash-globe-wrapper { width: 120px !important; height: 120px !important; }
-          .splash-title { font-size: 32px !important; }
-          .splash-subtitle { font-size: 14px !important; }
-          .splash-tagline { font-size: 11px !important; }
-          .splash-btn-text { font-size: 14px !important; }
+          .splash-globe-wrapper { width: 420px !important; height: 420px !important; }
+          .splash-title { font-size: 28px !important; }
         }
       `}</style>
 
       <div style={styles.container}>
-        {/* Background layers */}
-        <div style={styles.grid} />
+        {/* Scanlines */}
         <div style={styles.scanlines} />
 
-        {/* Header */}
+        {/* Header — centred HeadBox logo, 2× bigger */}
         <div style={styles.header}>
           <a href="https://www.headbox.com" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center' }}>
             <img
               src="https://cdn.prod.website-files.com/63bd498079b1380a81c6e13b/63bd498079b1384ca2c6e19d_HeadBox-Logo-Brick-header.png"
               alt="HeadBox"
-              style={{ height: 32, objectFit: 'contain', filter: 'brightness(0) invert(1)', opacity: 0.9 }}
+              style={{ height: 64, objectFit: 'contain', filter: 'brightness(0) invert(1)', opacity: 0.95 }}
             />
           </a>
-          <span style={styles.branding}>VenueGuessr</span>
         </div>
 
-        {/* Main */}
+        {/* Main — globe (4× bigger) with title overlaid */}
         <div style={styles.main}>
-          <div className="splash-globe-wrapper" style={{ width: 200, height: 200 }}>
-            <SplineGlobe />
-          </div>
+          <div style={styles.globeContainer}>
+            {/* Globe: 200 × 4 = 800px base */}
+            <div
+              className="splash-globe-wrapper"
+              style={{ width: 700, height: 700, position: 'relative' }}
+            >
+              <SplineGlobe size={700} />
+            </div>
 
-          <h1 className="splash-title" style={styles.title}>VenueGuessr</h1>
-          <p className="splash-subtitle" style={styles.subtitle}>Test your venue knowledge</p>
-          <p className="splash-tagline" style={styles.tagline}>Drop in. Place a pin. Play to win.</p>
+            {/* Title + subtitle overlaid on top of globe */}
+            <div style={styles.titleOverlay}>
+              <h1 className="splash-title" style={styles.title}>VenueGuessr</h1>
+              <p className="splash-subtitle" style={styles.subtitle}>Test your venue knowledge</p>
+              <p className="splash-tagline" style={styles.tagline}>Drop in. Place a pin. Play to win.</p>
+            </div>
+          </div>
         </div>
 
         {/* CTA */}
