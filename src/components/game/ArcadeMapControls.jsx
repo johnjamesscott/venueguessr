@@ -70,7 +70,7 @@ export default function ArcadeMapControls({ onPan, onZoom, timerSeconds, timerAc
     }}>
 
       {/* D-pad — 25vw, sits on the map only */}
-      <div style={{ width: '25vw', display: 'flex', justifyContent: 'center', paddingTop: 10, pointerEvents: 'auto' }}>
+      <div style={{ width: '25vw', display: 'flex', justifyContent: 'center', paddingTop: 50, pointerEvents: 'auto' }}>
         <div style={{
           display: 'grid',
           gridTemplateColumns: `repeat(3, ${DPAD_BTN})`,
@@ -127,7 +127,7 @@ export default function ArcadeMapControls({ onPan, onZoom, timerSeconds, timerAc
         flexDirection: 'column',
         alignItems: 'center',
         gap: 10,
-        paddingTop: 10,
+        paddingTop: 50,
         pointerEvents: 'auto',
       }}>
         <ArcadeBtn size={40} fontSize={24} onClick={() => onZoom('in')}>+</ArcadeBtn>
