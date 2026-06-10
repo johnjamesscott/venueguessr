@@ -70,18 +70,28 @@ export const VENUES_BY_LEVEL = {
 // Default fallback (used by legacy code)
 export const VENUES = VENUES_BY_LEVEL[1];
 
+// Clean embed params: auto-play, quickstart, hide clutter (dollhouse, branding, tags, reel, ruler, tour buttons)
+const EMBED_PARAMS = 'play=1&qs=1&dh=0&mls=2&gt=0&hr=0&measurements=0&mt=0&brand=0';
+
 // Normalize any tour URL to a proper Matterport embed URL
 export function getEmbedUrl(url) {
   if (!url) return null;
 
   if (url.includes('my.matterport.com/show/')) {
-    return url.includes('?') ? url + '&play=1' : url + '?play=1';
+    // Strip any existing params we're overriding, then append ours
+    const base = url.split('?')[0];
+    const existing = new URLSearchParams(url.includes('?') ? url.split('?')[1] : '');
+    const ours = new URLSearchParams(EMBED_PARAMS);
+    // Preserve m= (model ID) from original URL
+    const m = existing.get('m');
+    if (m) ours.set('m', m);
+    return `${base}?${ours.toString()}`;
   }
 
   if (url.includes('tours.headbox.com/model/')) {
     const match = url.match(/\/model\/([^/?]+)/);
     if (match) {
-      return `https://my.matterport.com/show/?m=${match[1]}&play=1&qs=1`;
+      return `https://my.matterport.com/show/?m=${match[1]}&${EMBED_PARAMS}`;
     }
   }
 
