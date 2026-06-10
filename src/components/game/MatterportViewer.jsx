@@ -72,19 +72,6 @@ export default function MatterportViewer({ tourUrl, nextTourUrl, onError }) {
         allowFullScreen
         title="Venue 3D Tour"
       />
-      {/* Blurred card overlay to hide Matterport venue name top-left */}
-      <div
-        className="absolute top-0 left-0 z-10 pointer-events-none"
-        style={{
-          width: '260px',
-          height: '52px',
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
-          background: 'rgba(18,18,18,0.75)',
-          borderBottomRightRadius: '8px',
-        }}
-      />
-
       {/* Hidden preload iframe for next venue */}
       {nextEmbedUrl && (
         <iframe

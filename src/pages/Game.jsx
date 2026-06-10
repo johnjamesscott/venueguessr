@@ -249,12 +249,15 @@ export default function Game() {
 
       {/* PLAYING — mobile-first arcade layout */}
       {gameState === GAME_STATES.PLAYING && currentVenue && (
-        <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', background: '#121212' }}>
-          {/* Header */}
-          <GameHeader level={selectedLevel} round={currentRoundIndex + 1} totalRounds={TOTAL_ROUNDS} />
+        <div style={{ position: 'fixed', inset: 0, background: '#121212' }}>
 
-          {/* Tour — full bleed 100vh 100vw */}
-          <div style={{ position: 'absolute', top: 60, left: 0, right: 0, bottom: '48vh', width: '100vw', height: 'calc(100vh - 60px - 48vh)', overflow: 'hidden' }}>
+          {/* Header — sits above everything */}
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 30 }}>
+            <GameHeader level={selectedLevel} round={currentRoundIndex + 1} totalRounds={TOTAL_ROUNDS} />
+          </div>
+
+          {/* Tour — full bleed from header to bottom, behind map */}
+          <div style={{ position: 'absolute', top: 60, left: 0, right: 0, bottom: 0, zIndex: 1, overflow: 'hidden' }}>
             <MatterportViewer
               tourUrl={currentVenue.tourUrl}
               nextTourUrl={shuffledVenues[currentRoundIndex + 1]?.tourUrl}
@@ -265,36 +268,35 @@ export default function Game() {
             )}
           </div>
 
-          {/* Map + overlaid controls */}
-          <div style={{ position: 'relative', height: '48vh', flexShrink: 0, borderTop: '2px solid #2a2a2a', marginTop: 'auto' }}>
-            <GuessMap
-              onGuessPlaced={handleGuessPlaced}
-              guessLocked={guessLocked}
-              currentGuess={currentGuess}
-              onLockGuess={() => lockGuess(currentGuess)}
-              fill
-              mapCenter={selectedLevel === 1 ? [54.5, -3.5] : undefined}
-              mapZoom={selectedLevel === 1 ? 5 : undefined}
-              mapRef={mapRef}
-            />
-            {/* Timer overlaid at 50% between tour and map */}
-            <div style={{ position: 'absolute', top: '-60px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, pointerEvents: 'none' }}>
-              <div style={{ pointerEvents: 'auto' }}>
-                <ArcadeMapControls
-                  onPan={handlePan}
-                  onZoom={handleZoom}
-                  timerSeconds={ROUND_SECONDS}
-                  timerActive={timerActive}
-                  onTimerExpire={handleTimerExpire}
-                  roundIndex={currentRoundIndex}
-                />
-              </div>
+          {/* Map — positioned over bottom 48vh of tour, overflow visible so timer straddles */}
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '48vh', zIndex: 10, overflow: 'visible' }}>
+            {/* Leaflet map clipped to its own bounds */}
+            <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', borderTop: '2px solid #2a2a2a' }}>
+              <GuessMap
+                onGuessPlaced={handleGuessPlaced}
+                guessLocked={guessLocked}
+                currentGuess={currentGuess}
+                onLockGuess={() => lockGuess(currentGuess)}
+                fill
+                mapCenter={selectedLevel === 1 ? [54.5, -3.5] : undefined}
+                mapZoom={selectedLevel === 1 ? 5 : undefined}
+                mapRef={mapRef}
+              />
             </div>
+            {/* Controls: D-pad left, timer straddling centre, zoom right */}
+            <ArcadeMapControls
+              onPan={handlePan}
+              onZoom={handleZoom}
+              timerSeconds={ROUND_SECONDS}
+              timerActive={timerActive}
+              onTimerExpire={handleTimerExpire}
+              roundIndex={currentRoundIndex}
+            />
           </div>
 
-          {/* Lock-in button */}
+          {/* Lock-in button — floats above the map bottom */}
           {!guessLocked && currentGuess && (
-            <div style={{ padding: '8px 16px', flexShrink: 0, background: '#1a1a1a' }}>
+            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 20, padding: '8px 16px', background: '#1a1a1a' }}>
               <button
                 onClick={() => lockGuess(currentGuess)}
                 style={{

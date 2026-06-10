@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import CountdownTimer from './CountdownTimer';
 
-const BTN = {
+const BTN_BASE = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -12,15 +12,13 @@ const BTN = {
   fontFamily: 'Montserrat, sans-serif',
   fontWeight: 700,
   color: '#1A1A1A',
-  boxShadow: '0 4px 0 rgba(0,0,0,0.25), 0 6px 12px rgba(0,0,0,0.2)',
-  transition: 'transform 0.08s ease, box-shadow 0.08s ease',
   userSelect: 'none',
   WebkitTapHighlightColor: 'transparent',
   touchAction: 'manipulation',
   flexShrink: 0,
 };
 
-function ArcadeBtn({ size = 52, fontSize = 20, onClick, children, style }) {
+function ArcadeBtn({ size = 36, fontSize = 14, onClick, children }) {
   const [pressed, setPressed] = React.useState(false);
   const handleDown = () => { setPressed(true); onClick?.(); };
   const handleUp = () => setPressed(false);
@@ -31,7 +29,7 @@ function ArcadeBtn({ size = 52, fontSize = 20, onClick, children, style }) {
       onPointerUp={handleUp}
       onPointerLeave={handleUp}
       style={{
-        ...BTN,
+        ...BTN_BASE,
         width: size,
         height: size,
         fontSize,
@@ -39,7 +37,7 @@ function ArcadeBtn({ size = 52, fontSize = 20, onClick, children, style }) {
         boxShadow: pressed
           ? '0 2px 0 rgba(0,0,0,0.25), 0 3px 6px rgba(0,0,0,0.15)'
           : '0 4px 0 rgba(0,0,0,0.25), 0 6px 12px rgba(0,0,0,0.2)',
-        ...style,
+        transition: 'transform 0.08s ease, box-shadow 0.08s ease',
       }}
     >
       {children}
@@ -47,74 +45,98 @@ function ArcadeBtn({ size = 52, fontSize = 20, onClick, children, style }) {
   );
 }
 
-// Arrow SVGs
 const Arrow = ({ dir }) => {
   const r = { up: 0, right: 90, down: 180, left: 270 }[dir];
   return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ transform: `rotate(${r}deg)` }}>
+    <svg width="12" height="12" viewBox="0 0 18 18" fill="none" style={{ transform: `rotate(${r}deg)` }}>
       <path d="M9 3L15 13H3L9 3Z" fill="#1A1A1A" />
     </svg>
   );
 };
 
+// D-pad button size: fit 3 columns + 2 gaps (3px each) in 25vw minus some padding
+const DPAD_BTN = 'calc((25vw - 22px) / 3)';
+// Timer background circle: 6px padding on each side around the 120px SVG = 132px
+const TIMER_BG = 132;
+
 export default function ArcadeMapControls({ onPan, onZoom, timerSeconds, timerActive, onTimerExpire, roundIndex }) {
   return (
     <div style={{
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
       display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '0 16px',
-      height: '100%',
-      gap: 8,
+      alignItems: 'flex-start',
+      pointerEvents: 'none',
+      zIndex: 100,
     }}>
 
-      {/* D-Pad */}
-      <div style={{ display: 'grid', gridTemplateColumns: '52px 52px 52px', gridTemplateRows: '52px 52px 52px', gap: 4, flexShrink: 0 }}>
-        {/* Up */}
-        <div style={{ gridColumn: 2, gridRow: 1 }}>
-          <ArcadeBtn onClick={() => onPan('up')}><Arrow dir="up" /></ArcadeBtn>
-        </div>
-        {/* Left */}
-        <div style={{ gridColumn: 1, gridRow: 2 }}>
-          <ArcadeBtn onClick={() => onPan('left')}><Arrow dir="left" /></ArcadeBtn>
-        </div>
-        {/* Center fill */}
-        <div style={{ gridColumn: 2, gridRow: 2, width: 52, height: 52, background: 'rgba(255,255,255,0.08)', borderRadius: '50%' }} />
-        {/* Right */}
-        <div style={{ gridColumn: 3, gridRow: 2 }}>
-          <ArcadeBtn onClick={() => onPan('right')}><Arrow dir="right" /></ArcadeBtn>
-        </div>
-        {/* Down */}
-        <div style={{ gridColumn: 2, gridRow: 3 }}>
-          <ArcadeBtn onClick={() => onPan('down')}><Arrow dir="down" /></ArcadeBtn>
+      {/* D-pad — 25vw, sits on the map only */}
+      <div style={{ width: '25vw', display: 'flex', justifyContent: 'center', paddingTop: 10, pointerEvents: 'auto' }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: `repeat(3, ${DPAD_BTN})`,
+          gridTemplateRows: `repeat(3, ${DPAD_BTN})`,
+          gap: 3,
+        }}>
+          <div style={{ gridColumn: 2, gridRow: 1 }}>
+            <ArcadeBtn size={DPAD_BTN} onClick={() => onPan('up')}><Arrow dir="up" /></ArcadeBtn>
+          </div>
+          <div style={{ gridColumn: 1, gridRow: 2 }}>
+            <ArcadeBtn size={DPAD_BTN} onClick={() => onPan('left')}><Arrow dir="left" /></ArcadeBtn>
+          </div>
+          <div style={{ gridColumn: 2, gridRow: 2, borderRadius: '50%', background: 'rgba(255,255,255,0.08)' }} />
+          <div style={{ gridColumn: 3, gridRow: 2 }}>
+            <ArcadeBtn size={DPAD_BTN} onClick={() => onPan('right')}><Arrow dir="right" /></ArcadeBtn>
+          </div>
+          <div style={{ gridColumn: 2, gridRow: 3 }}>
+            <ArcadeBtn size={DPAD_BTN} onClick={() => onPan('down')}><Arrow dir="down" /></ArcadeBtn>
+          </div>
         </div>
       </div>
 
-      {/* Timer — centre with circle background */}
-      <div style={{ 
-        flex: 1, 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center',
-        width: 180,
-        height: 180,
-        background: '#1f1f1f',
-        borderRadius: '50%',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.4)'
+      {/* Timer — 50vw, centered, straddles the tour/map boundary */}
+      <div style={{
+        width: '50vw',
+        display: 'flex',
+        justifyContent: 'center',
+        transform: 'translateY(-50%)',
+        pointerEvents: 'auto',
       }}>
-        <CountdownTimer
-          key={roundIndex}
-          seconds={timerSeconds}
-          onExpire={onTimerExpire}
-          isActive={timerActive}
-        />
+        <div style={{
+          width: TIMER_BG,
+          height: TIMER_BG,
+          background: '#1f1f1f',
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.7)',
+        }}>
+          <CountdownTimer
+            key={roundIndex}
+            seconds={timerSeconds}
+            onExpire={onTimerExpire}
+            isActive={timerActive}
+          />
+        </div>
       </div>
 
-      {/* Zoom buttons */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center', flexShrink: 0 }}>
-        <ArcadeBtn size={52} fontSize={28} onClick={() => onZoom('in')}>+</ArcadeBtn>
-        <ArcadeBtn size={52} fontSize={28} onClick={() => onZoom('out')}>−</ArcadeBtn>
+      {/* Zoom buttons — 25vw, sits on the map only */}
+      <div style={{
+        width: '25vw',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 10,
+        paddingTop: 10,
+        pointerEvents: 'auto',
+      }}>
+        <ArcadeBtn size={40} fontSize={24} onClick={() => onZoom('in')}>+</ArcadeBtn>
+        <ArcadeBtn size={40} fontSize={24} onClick={() => onZoom('out')}>−</ArcadeBtn>
       </div>
+
     </div>
   );
 }
