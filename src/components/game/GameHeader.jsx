@@ -1,6 +1,10 @@
 import React from 'react';
 
-export default function GameHeader({ level }) {
+export default function GameHeader({ level, round, totalRounds }) {
+  const label = round != null
+    ? `Round ${round}${totalRounds ? ` / ${totalRounds}` : ''}`
+    : level != null ? `Level ${level}` : null;
+
   return (
     <header
       className="flex items-center justify-between bg-white"
@@ -13,7 +17,7 @@ export default function GameHeader({ level }) {
           style={{ height: 36, objectFit: 'contain' }}
         />
       </a>
-      {level != null && (
+      {label && (
         <div style={{
           background: '#F5F5F5',
           borderRadius: 8,
@@ -25,7 +29,7 @@ export default function GameHeader({ level }) {
           letterSpacing: '0.5px',
           border: '1px solid #e0e0e0',
         }}>
-          Level {level}
+          {label}
         </div>
       )}
     </header>

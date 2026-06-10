@@ -251,7 +251,7 @@ export default function Game() {
       {gameState === GAME_STATES.PLAYING && currentVenue && (
         <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', background: '#121212' }}>
           {/* Header */}
-          <GameHeader level={selectedLevel} />
+          <GameHeader level={selectedLevel} round={currentRoundIndex + 1} totalRounds={TOTAL_ROUNDS} />
 
           {/* Tour — fills remaining space */}
           <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
@@ -265,8 +265,8 @@ export default function Game() {
             )}
           </div>
 
-          {/* Map — fixed height strip */}
-          <div style={{ position: 'relative', height: '28vh', flexShrink: 0, borderTop: '2px solid #2a2a2a' }}>
+          {/* Map + overlaid controls */}
+          <div style={{ position: 'relative', height: '48vh', flexShrink: 0, borderTop: '2px solid #2a2a2a' }}>
             <GuessMap
               onGuessPlaced={handleGuessPlaced}
               guessLocked={guessLocked}
@@ -277,11 +277,24 @@ export default function Game() {
               mapZoom={selectedLevel === 1 ? 5 : undefined}
               mapRef={mapRef}
             />
+            {/* Arcade controls overlaid at top of map */}
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1000, pointerEvents: 'none' }}>
+              <div style={{ pointerEvents: 'auto' }}>
+                <ArcadeMapControls
+                  onPan={handlePan}
+                  onZoom={handleZoom}
+                  timerSeconds={ROUND_SECONDS}
+                  timerActive={timerActive}
+                  onTimerExpire={handleTimerExpire}
+                  roundIndex={currentRoundIndex}
+                />
+              </div>
+            </div>
           </div>
 
           {/* Lock-in button */}
           {!guessLocked && currentGuess && (
-            <div style={{ padding: '8px 16px 0', flexShrink: 0, background: '#1a1a1a' }}>
+            <div style={{ padding: '8px 16px', flexShrink: 0, background: '#1a1a1a' }}>
               <button
                 onClick={() => lockGuess(currentGuess)}
                 style={{
@@ -306,25 +319,13 @@ export default function Game() {
               </button>
             </div>
           )}
-
-          {/* Arcade controls — D-pad + timer + zoom */}
-          <div style={{ height: 172, background: '#1a1a1a', flexShrink: 0, borderTop: '2px solid #2a2a2a' }}>
-            <ArcadeMapControls
-              onPan={handlePan}
-              onZoom={handleZoom}
-              timerSeconds={ROUND_SECONDS}
-              timerActive={timerActive}
-              onTimerExpire={handleTimerExpire}
-              roundIndex={currentRoundIndex}
-            />
-          </div>
         </div>
       )}
 
       {/* ROUND RESULT */}
       {gameState === GAME_STATES.ROUND_RESULT && currentVenue && (
         <div className="flex flex-col" style={{ minHeight: '100dvh' }}>
-          <GameHeader level={selectedLevel} />
+          <GameHeader level={selectedLevel} round={currentRoundIndex + 1} totalRounds={TOTAL_ROUNDS} />
           <div className="flex-1 p-3 md:p-4">
             <RoundResult
               roundNumber={currentRoundIndex + 1}
