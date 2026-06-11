@@ -182,8 +182,8 @@ export default function Game() {
   const handleNextRound = useCallback(() => {
     const venue = shuffledVenues[currentRoundIndex];
     setResults(prev => [...prev, {
-      venueId: venue.id, guess: currentGuess,
-      distance: currentDistance, score: currentScore,
+      venueId: venue.id, venueName: venue.venueName, city: venue.city,
+      guess: currentGuess, distance: currentDistance, score: currentScore,
     }]);
     const isLastRound = currentRoundIndex >= Math.min(shuffledVenues.length, TOTAL_ROUNDS) - 1;
     if (isLastRound && isDemo) {
@@ -205,6 +205,8 @@ export default function Game() {
   const handleContactSubmit = useCallback(async (formData) => {
     const finalResults = [...results, {
       venueId: shuffledVenues[currentRoundIndex]?.id,
+      venueName: shuffledVenues[currentRoundIndex]?.venueName,
+      city: shuffledVenues[currentRoundIndex]?.city,
       guess: currentGuess, distance: currentDistance, score: currentScore,
     }];
     const total = finalResults.reduce((sum, r) => sum + (r.score || 0), 0);
@@ -222,6 +224,22 @@ export default function Game() {
       });
       if (formData.email) setPlayerEmail(formData.email);
     } catch (_) {}
+
+    // Send post-game email (fire and forget)
+    if (formData.email) {
+      base44.functions.invoke('sendPostGameEmail', {
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        email: formData.email,
+        total_score: total,
+        round_results: finalResults.map(r => ({
+          venue_name: r.venueName || 'Unknown Venue',
+          city: r.city || '',
+          score: r.score || 0,
+          distance_km: r.distance?.km || 0,
+        })),
+      }).catch(() => {});
+    }
 
     setGameState(GAME_STATES.SUMMARY);
   }, [results, shuffledVenues, currentRoundIndex, currentGuess, currentDistance, currentScore]);
