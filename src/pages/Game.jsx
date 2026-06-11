@@ -214,6 +214,12 @@ export default function Game() {
     map.setZoom(direction === 'in' ? current + 1 : current - 1, { animate: true });
   }, []);
 
+  const handleReset = useCallback(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    map.setView(selectedLevel === 1 ? [54.5, -3.5] : [20, 0], selectedLevel === 1 ? 5 : 2, { animate: true });
+  }, [selectedLevel]);
+
   const currentVenue = shuffledVenues[currentRoundIndex];
   const isLastRound = currentRoundIndex >= shuffledVenues.length - 1;
 
@@ -287,6 +293,7 @@ export default function Game() {
             <ArcadeMapControls
               onPan={handlePan}
               onZoom={handleZoom}
+              onReset={handleReset}
               timerSeconds={ROUND_SECONDS}
               timerActive={timerActive}
               onTimerExpire={handleTimerExpire}

@@ -85,7 +85,7 @@ export default function LeaderboardScroller() {
               {/* Name + achievement */}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ fontSize: 12, fontWeight: 700, color: '#fff', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {entry.player_name}
+                  {(entry.player_name || '').split(' ')[0]}
                 </p>
                 <p style={{ fontSize: 10, fontWeight: 500, color: 'rgba(255,255,255,0.5)', margin: 0 }}>
                   {entry.rounds_played ?? 0} rounds played

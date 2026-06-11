@@ -169,6 +169,11 @@ export default function SplashScreen({ onStart }) {
           50% { box-shadow: 0 0 40px 12px rgba(175,35,28,0.8), 0 0 80px 20px rgba(175,35,28,0.4); }
         }
         .splash-btn:active { transform: scale(0.95) !important; }
+        @keyframes creditFlash {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0; }
+        }
+        .credit-flash { animation: creditFlash 1s step-start infinite; }
 
         @media (max-height: 750px) {
           .splash-globe-wrapper { width: 900px !important; height: 900px !important; }
@@ -206,12 +211,13 @@ export default function SplashScreen({ onStart }) {
               <SplineGlobe size={1400} />
             </div>
 
-            {/* Title + subtitle absolutely centred over the globe bottom half */}
+            {/* Title + subtitle — absolutely centred over the globe */}
             <div style={{
               position: 'absolute',
-              bottom: 60,
+              top: '50%',
               left: 0,
               right: 0,
+              transform: 'translateY(-50%)',
               textAlign: 'center',
               zIndex: 20,
               pointerEvents: 'none',
@@ -225,14 +231,27 @@ export default function SplashScreen({ onStart }) {
 
         {/* CTA */}
         <div style={styles.ctaSection}>
-          <button
-            className="splash-btn"
-            style={styles.button}
-            onClick={handleStart}
-            onTouchEnd={handleStart}
-          >
-            <span className="splash-btn-text">Start Game</span>
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+            <button
+              className="splash-btn"
+              style={styles.button}
+              onClick={handleStart}
+              onTouchEnd={handleStart}
+            >
+              <span className="splash-btn-text">Start Game</span>
+            </button>
+            <span className="credit-flash" style={{
+              fontFamily: 'Montserrat, sans-serif',
+              fontWeight: 800,
+              fontSize: 13,
+              letterSpacing: '2px',
+              textTransform: 'uppercase',
+              color: '#FFD700',
+              textShadow: '0 0 10px rgba(255,215,0,0.8)',
+            }}>
+              ★ 1 Credit ★
+            </span>
+          </div>
         </div>
 
         {/* Leaderboard */}
