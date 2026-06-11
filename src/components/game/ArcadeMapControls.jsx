@@ -42,7 +42,7 @@ function GBBtn({ size = 44, fontSize = 18, onClick, onMouseEnter, onMouseLeave, 
 
 const TIMER_SIZE = 240;
 
-export default function ArcadeMapControls({ onZoom, timerSeconds, timerActive, onTimerExpire, roundIndex, onReset }) {
+export default function ArcadeMapControls({ onZoom, timerSeconds, timerActive, onTimerExpire, onTimerTick, roundIndex, onReset }) {
   const [resetPressed, setResetPressed] = React.useState(false);
   const [zoomInTip, setZoomInTip] = React.useState(false);
   const [zoomOutTip, setZoomOutTip] = React.useState(false);
@@ -82,6 +82,7 @@ export default function ArcadeMapControls({ onZoom, timerSeconds, timerActive, o
             key={roundIndex}
             seconds={timerSeconds}
             onExpire={onTimerExpire}
+            onTick={onTimerTick}
             isActive={timerActive}
           />
         </div>

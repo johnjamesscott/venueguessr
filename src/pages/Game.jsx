@@ -58,6 +58,7 @@ export default function Game() {
   const [playerEmail, setPlayerEmail] = useState(null);
   const [showCelebration, setShowCelebration] = useState(false);
   const [isDemo, setIsDemo] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState(ROUND_SECONDS);
   const [activeCompetition, setActiveCompetition] = useState(null);
   const [prizes, setPrizes] = useState([]);
   const [venuePool, setVenuePool] = useState([]);
@@ -76,6 +77,7 @@ export default function Game() {
     setCurrentDistance(null);
     setCurrentScore(0);
     setTimerActive(false);
+    setTimeRemaining(ROUND_SECONDS);
     setPreRoundCountdown(true);
     setShowCelebration(false);
   };
@@ -145,11 +147,11 @@ export default function Game() {
     setTimerActive(true);
   }, []);
 
-  const lockGuess = useCallback((guess) => {
+  const lockGuess = useCallback((guess, lockedTimeRemaining) => {
     if (guessLocked) return;
     const venue = shuffledVenues[currentRoundIndex];
     const dist = guess ? calculateDistance(guess.lat, guess.lng, venue.lat, venue.lng) : null;
-    const score = dist ? calculateScore(dist.km) : 0;
+    const score = dist ? calculateScore(dist.km, lockedTimeRemaining ?? timeRemaining, ROUND_SECONDS) : 0;
 
     playLockSound();
     if (score >= GOOD_SCORE_THRESHOLD) {
@@ -169,7 +171,7 @@ export default function Game() {
   }, [guessLocked, shuffledVenues, currentRoundIndex]);
 
   const handleTimerExpire = useCallback(() => {
-    if (!guessLocked) lockGuess(currentGuess);
+    if (!guessLocked) lockGuess(currentGuess, 0);
   }, [guessLocked, lockGuess, currentGuess]);
 
   const handleGuessPlaced = useCallback((latlng) => {
@@ -183,7 +185,7 @@ export default function Game() {
       venueId: venue.id, guess: currentGuess,
       distance: currentDistance, score: currentScore,
     }]);
-    const isLastRound = currentRoundIndex >= shuffledVenues.length - 1;
+    const isLastRound = currentRoundIndex >= Math.min(shuffledVenues.length, TOTAL_ROUNDS) - 1;
     if (isLastRound && isDemo) {
       setGameState(GAME_STATES.SUMMARY);
     } else if (isLastRound) {
@@ -309,7 +311,7 @@ export default function Game() {
                 onGuessPlaced={handleGuessPlaced}
                 guessLocked={guessLocked}
                 currentGuess={currentGuess}
-                onLockGuess={() => lockGuess(currentGuess)}
+                onLockGuess={() => lockGuess(currentGuess, timeRemaining)}
                 fill
                 mapCenter={[54.5, -3.5]}
                 mapZoom={5}
@@ -323,6 +325,7 @@ export default function Game() {
             timerSeconds={ROUND_SECONDS}
             timerActive={timerActive}
             onTimerExpire={handleTimerExpire}
+            onTimerTick={setTimeRemaining}
             roundIndex={currentRoundIndex}
           />
         </div>

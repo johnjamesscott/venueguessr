@@ -5,7 +5,7 @@ const STROKE = 8;
 const R = (SIZE - STROKE) / 2;
 const CIRC = 2 * Math.PI * R;
 
-export default function CountdownTimer({ seconds, onExpire, isActive }) {
+export default function CountdownTimer({ seconds, onExpire, onTick, isActive }) {
   const intervalRef = useRef(null);
   const [timeLeft, setTimeLeft] = React.useState(seconds);
 
@@ -15,12 +15,14 @@ export default function CountdownTimer({ seconds, onExpire, isActive }) {
     if (!isActive) { clearInterval(intervalRef.current); return; }
     intervalRef.current = setInterval(() => {
       setTimeLeft(prev => {
-        if (prev <= 1) { clearInterval(intervalRef.current); onExpire(); return 0; }
-        return prev - 1;
+        const next = prev <= 1 ? 0 : prev - 1;
+        onTick?.(next);
+        if (next === 0) { clearInterval(intervalRef.current); onExpire(); }
+        return next;
       });
     }, 1000);
     return () => clearInterval(intervalRef.current);
-  }, [isActive, onExpire]);
+  }, [isActive, onExpire, onTick]);
 
   const isUrgent = timeLeft <= 10;
   const progress = timeLeft / seconds;
