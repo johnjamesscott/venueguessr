@@ -46,6 +46,15 @@ export default function ArcadeMapControls({ onZoom, timerSeconds, timerActive, o
   const [resetPressed, setResetPressed] = React.useState(false);
   const [zoomInTip, setZoomInTip] = React.useState(false);
   const [zoomOutTip, setZoomOutTip] = React.useState(false);
+  const [zoomUsed, setZoomUsed] = React.useState(false);
+
+  // Show persistent hints on round 1 until zoom is used
+  const showHints = roundIndex === 0 && !zoomUsed;
+
+  const handleZoom = (dir) => {
+    setZoomUsed(true);
+    onZoom(dir);
+  };
 
   return (
     <div style={{ position: 'absolute', bottom: 0, left: '1em', right: '1em', height: '40vh', pointerEvents: 'none', zIndex: 20 }}>
@@ -120,30 +129,38 @@ export default function ArcadeMapControls({ onZoom, timerSeconds, timerActive, o
       }}>
         {/* Zoom In */}
         <div style={{ position: 'relative' }}>
-          {zoomInTip && (
+          {(showHints || zoomInTip) && (
             <div style={{
               position: 'absolute', right: 100, top: '50%', transform: 'translateY(-50%)',
               background: 'rgba(0,0,0,0.85)', color: '#fff', borderRadius: 8,
               padding: '6px 12px', fontSize: 20, fontWeight: 600, whiteSpace: 'nowrap',
               pointerEvents: 'none',
+              animation: showHints && !zoomInTip ? 'hintPulse 2s ease-in-out infinite' : 'none',
             }}>Zoom In</div>
           )}
-          <GBBtn size={88} fontSize={52} onClick={() => onZoom('in')}
+          <GBBtn size={88} fontSize={52} onClick={() => handleZoom('in')}
             onMouseEnter={() => setZoomInTip(true)} onMouseLeave={() => setZoomInTip(false)}>+</GBBtn>
         </div>
         {/* Zoom Out */}
         <div style={{ position: 'relative' }}>
-          {zoomOutTip && (
+          {(showHints || zoomOutTip) && (
             <div style={{
               position: 'absolute', right: 100, top: '50%', transform: 'translateY(-50%)',
               background: 'rgba(0,0,0,0.85)', color: '#fff', borderRadius: 8,
               padding: '6px 12px', fontSize: 20, fontWeight: 600, whiteSpace: 'nowrap',
               pointerEvents: 'none',
+              animation: showHints && !zoomOutTip ? 'hintPulse 2s ease-in-out infinite' : 'none',
             }}>Zoom Out</div>
           )}
-          <GBBtn size={88} fontSize={52} onClick={() => onZoom('out')}
+          <GBBtn size={88} fontSize={52} onClick={() => handleZoom('out')}
             onMouseEnter={() => setZoomOutTip(true)} onMouseLeave={() => setZoomOutTip(false)}>−</GBBtn>
         </div>
+        <style>{`
+          @keyframes hintPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+          }
+        `}</style>
       </div>
 
     </div>
