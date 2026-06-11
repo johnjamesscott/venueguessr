@@ -30,7 +30,7 @@ const styles = {
   },
   header: {
     position: 'relative',
-    zIndex: 10,
+    zIndex: 30,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -246,8 +246,8 @@ export default function SplashScreen({ onStart }) {
               fontSize: 13,
               letterSpacing: '2px',
               textTransform: 'uppercase',
-              color: '#FFD700',
-              textShadow: '0 0 10px rgba(255,215,0,0.8)',
+              color: '#ffffff',
+              textShadow: '0 0 10px rgba(255,255,255,0.6)',
             }}>
               ★ 1 Credit ★
             </span>

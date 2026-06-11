@@ -50,7 +50,7 @@ export default function ArcadeMapControls({ onPan, onZoom, timerSeconds, timerAc
       alignItems: 'flex-start',
       pointerEvents: 'none',
       width: '100%',
-      paddingTop: 70, // pushes buttons below the timer straddling point, firmly onto the map
+      paddingTop: 'calc(40vh * 0.30)', // 30% down the map height
     }}>
 
       {/* Reset button — left 25vw, on the map */}
@@ -69,7 +69,7 @@ export default function ArcadeMapControls({ onPan, onZoom, timerSeconds, timerAc
         width: '50vw',
         display: 'flex',
         justifyContent: 'center',
-        transform: 'translateY(-100%)', // pull timer UP above the paddingTop offset so it straddles the boundary
+        transform: 'translateY(calc(-100% + calc(40vh * 0.40)))', // shifted down 40% of map height
         pointerEvents: 'auto',
       }}>
         <div style={{
@@ -100,8 +100,8 @@ export default function ArcadeMapControls({ onPan, onZoom, timerSeconds, timerAc
         gap: 8,
         pointerEvents: 'auto',
       }}>
-        <GBBtn size={44} fontSize={26} color='#C0C0C0' textColor='#1A1A1A' onClick={() => onZoom('in')}>+</GBBtn>
-        <GBBtn size={44} fontSize={26} color='#C0C0C0' textColor='#1A1A1A' onClick={() => onZoom('out')}>−</GBBtn>
+        <GBBtn size={44} fontSize={26} color='#3a3a3a' textColor='#fff' onClick={() => onZoom('in')}>+</GBBtn>
+        <GBBtn size={44} fontSize={26} color='#3a3a3a' textColor='#fff' onClick={() => onZoom('out')}>−</GBBtn>
       </div>
 
     </div>
