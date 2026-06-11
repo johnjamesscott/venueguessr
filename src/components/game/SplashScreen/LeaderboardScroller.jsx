@@ -6,15 +6,27 @@ const MEDAL = ['🥇', '🥈', '🥉'];
 const PAGE_SIZE = 4;
 
 async function fetchLeaderboard() {
-  const entries = await base44.entities.LeaderboardEntry.list('-total_score', 12);
-  return entries;
+  // Fetch active competition first
+  const res = await base44.functions.invoke('getActiveCompetition', {});
+  const competition = res?.data?.competition || null;
+
+  if (!competition) return { entries: [], competition: null };
+
+  // Fetch entries for this competition only
+  const entries = await base44.entities.LeaderboardEntry.filter(
+    { competition_id: competition.id },
+    '-total_score',
+    20
+  );
+
+  return { entries, competition };
 }
 
 export default function LeaderboardScroller() {
   const [page, setPage] = useState(0);
   const timerRef = useRef(null);
 
-  const { data: entries = [], isLoading } = useQuery({
+  const { data = { entries: [], competition: null }, isLoading } = useQuery({
     queryKey: ['leaderboard-splash'],
     queryFn: fetchLeaderboard,
     staleTime: 30_000,
@@ -22,7 +34,12 @@ export default function LeaderboardScroller() {
     retry: 2,
   });
 
+  const { entries, competition } = data;
   const totalPages = Math.max(1, Math.ceil(entries.length / PAGE_SIZE));
+
+  useEffect(() => {
+    setPage(0);
+  }, [competition?.id]);
 
   useEffect(() => {
     if (entries.length <= PAGE_SIZE) return;
@@ -42,17 +59,30 @@ export default function LeaderboardScroller() {
     );
   }
 
+  if (!competition) {
+    return (
+      <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, textAlign: 'center', padding: '8px 0' }}>
+        No active competition.
+      </p>
+    );
+  }
+
   if (entries.length === 0) {
     return (
       <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, textAlign: 'center', padding: '8px 0' }}>
-        No scores yet. Be the first!
+        No scores yet — be the first!
       </p>
     );
   }
 
   return (
     <div style={{ width: '100%' }}>
-      {/* Entries */}
+      {competition.name && (
+        <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 16, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1.5px', margin: '0 0 6px', textAlign: 'center' }}>
+          {competition.name}
+        </p>
+      )}
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         {visible.map((entry, i) => {
           const globalRank = page * PAGE_SIZE + i + 1;
@@ -70,7 +100,6 @@ export default function LeaderboardScroller() {
                 animation: `slideUpIn 0.4s ease-out ${i * 0.07}s both`,
               }}
             >
-              {/* Rank */}
               <span style={{
                 fontSize: globalRank <= 3 ? 36 : 26,
                 fontWeight: 900,
@@ -82,7 +111,6 @@ export default function LeaderboardScroller() {
                 {globalRank <= 3 ? MEDAL[globalRank - 1] : globalRank}
               </span>
 
-              {/* Name + achievement */}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ fontSize: 24, fontWeight: 700, color: '#fff', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {(entry.player_name || '').split(' ')[0]}
@@ -92,7 +120,6 @@ export default function LeaderboardScroller() {
                 </p>
               </div>
 
-              {/* Score */}
               <span style={{ fontSize: 26, fontWeight: 800, color: '#FF4444', letterSpacing: 0.5 }}>
                 {(entry.total_score ?? 0).toLocaleString()}
               </span>
@@ -101,7 +128,6 @@ export default function LeaderboardScroller() {
         })}
       </div>
 
-      {/* Dot indicators */}
       {totalPages > 1 && (
         <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 8 }}>
           {Array.from({ length: totalPages }).map((_, i) => (
