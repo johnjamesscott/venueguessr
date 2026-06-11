@@ -62,6 +62,7 @@ export default function Game() {
   const [activeCompetition, setActiveCompetition] = useState(null);
   const [prizes, setPrizes] = useState([]);
   const [venuePool, setVenuePool] = useState([]);
+  const scoreSubmittedRef = useRef(false);
 
   // Load active competition + prizes on mount
   useEffect(() => {
@@ -120,6 +121,7 @@ export default function Game() {
         setCurrentRoundIndex(0);
         setResults([]);
         setIsDemo(false);
+        scoreSubmittedRef.current = false;
         resetRoundState();
         setGameState(GAME_STATES.PLAYING);
         return;
@@ -203,12 +205,11 @@ export default function Game() {
   }, [currentRoundIndex, shuffledVenues, currentGuess, currentDistance, currentScore, isDemo]);
 
   const handleContactSubmit = useCallback(async (formData) => {
-    const finalResults = [...results, {
-      venueId: shuffledVenues[currentRoundIndex]?.id,
-      venueName: shuffledVenues[currentRoundIndex]?.venueName,
-      city: shuffledVenues[currentRoundIndex]?.city,
-      guess: currentGuess, distance: currentDistance, score: currentScore,
-    }];
+    if (scoreSubmittedRef.current) return;
+    scoreSubmittedRef.current = true;
+
+    // results already contains all rounds (added in handleNextRound for the last round too)
+    const finalResults = results;
     const total = finalResults.reduce((sum, r) => sum + (r.score || 0), 0);
     const withDist = finalResults.filter(r => r.distance);
     const avgKm = withDist.length > 0
