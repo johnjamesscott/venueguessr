@@ -1,0 +1,57 @@
+{
+  "name": "Venue",
+  "type": "object",
+  "properties": {
+    "venue_name": {
+      "type": "string"
+    },
+    "space_name": {
+      "type": "string"
+    },
+    "city": {
+      "type": "string"
+    },
+    "country": {
+      "type": "string"
+    },
+    "latitude": {
+      "type": "number"
+    },
+    "longitude": {
+      "type": "number"
+    },
+    "matterport_url": {
+      "type": "string"
+    },
+    "headbox_url": {
+      "type": "string"
+    },
+    "difficulty": {
+      "type": "string",
+      "enum": [
+        "easy",
+        "medium",
+        "hard"
+      ],
+      "default": "easy"
+    },
+    "featured": {
+      "type": "boolean",
+      "default": false
+    },
+    "active": {
+      "type": "boolean",
+      "default": true
+    },
+    "is_demo": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "venue_name",
+    "matterport_url",
+    "latitude",
+    "longitude"
+  ]
+}

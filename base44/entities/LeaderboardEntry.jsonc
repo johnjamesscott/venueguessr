@@ -2,6 +2,9 @@
   "name": "LeaderboardEntry",
   "type": "object",
   "properties": {
+    "competition_id": {
+      "type": "string"
+    },
     "player_name": {
       "type": "string",
       "description": "Display name of the player"

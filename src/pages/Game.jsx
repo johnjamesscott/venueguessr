@@ -1,14 +1,11 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { VENUES_BY_LEVEL, LEVELS, LONDON_VENUES, OUTSIDE_VENUES, DEMO_VENUE } from '@/data/venues';
-import { calculateDistance, shuffleArray } from '@/utils/distance';
+import { getEmbedUrl } from '@/data/venues';
+import { calculateDistance } from '@/utils/distance';
 import { calculateScore } from '@/utils/scoring';
 import { base44 } from '@/api/base44Client';
 import {
-  unlockAudio,
-  playPinSound,
-  playLockSound,
-  playCelebrationSound,
-  playErrorSound,
+  unlockAudio, playPinSound, playLockSound,
+  playCelebrationSound, playErrorSound,
 } from '@/utils/sounds';
 
 import SplashScreen from '@/components/game/SplashScreen/SplashScreen';
@@ -24,7 +21,7 @@ import CelebrationOverlay from '@/components/game/CelebrationOverlay';
 
 const ROUND_SECONDS = 30;
 const TOTAL_ROUNDS = 3;
-const GOOD_SCORE_THRESHOLD = 2000; // score >= this triggers celebration
+const GOOD_SCORE_THRESHOLD = 2000;
 
 const GAME_STATES = {
   SPLASH: 'splash',
@@ -34,9 +31,21 @@ const GAME_STATES = {
   SUMMARY: 'summary',
 };
 
+// Convert a Base44 Venue entity to the shape the game components expect
+const venueToGame = (v) => ({
+  id: v.id,
+  venueName: v.venue_name,
+  spaceName: v.space_name,
+  city: v.city,
+  country: v.country,
+  lat: v.latitude,
+  lng: v.longitude,
+  tourUrl: v.matterport_url,
+  headboxUrl: v.headbox_url,
+});
+
 export default function Game() {
   const [gameState, setGameState] = useState(GAME_STATES.SPLASH);
-  const [selectedLevel, setSelectedLevel] = useState(1);
   const [shuffledVenues, setShuffledVenues] = useState([]);
   const [currentRoundIndex, setCurrentRoundIndex] = useState(0);
   const [currentGuess, setCurrentGuess] = useState(null);
@@ -47,67 +56,76 @@ export default function Game() {
   const [preRoundCountdown, setPreRoundCountdown] = useState(false);
   const [currentScore, setCurrentScore] = useState(0);
   const [playerEmail, setPlayerEmail] = useState(null);
-  const [venuePool, setVenuePool] = useState([]);
   const [showCelebration, setShowCelebration] = useState(false);
   const [isDemo, setIsDemo] = useState(false);
+  const [activeCompetition, setActiveCompetition] = useState(null);
+  const [prizes, setPrizes] = useState([]);
+  const [venuePool, setVenuePool] = useState([]);
 
+  // Load active competition + prizes on mount
+  useEffect(() => {
+    base44.functions.invoke('getActiveCompetition', {}).then(res => {
+      if (res?.data?.competition) setActiveCompetition(res.data.competition);
+      if (res?.data?.prizes) setPrizes(res.data.prizes);
+    }).catch(() => {});
+  }, []);
 
+  const resetRoundState = () => {
+    setCurrentGuess(null);
+    setGuessLocked(false);
+    setCurrentDistance(null);
+    setCurrentScore(0);
+    setTimerActive(false);
+    setPreRoundCountdown(true);
+    setShowCelebration(false);
+  };
 
-  const startDemo = useCallback(() => {
+  const startDemo = useCallback(async () => {
     unlockAudio();
-    setSelectedLevel(1);
-    setShuffledVenues([DEMO_VENUE]);
+    // Load demo venue from Base44
+    let demoVenues = [];
+    try {
+      const all = await base44.entities.Venue.filter({ is_demo: true, active: true });
+      demoVenues = all.map(venueToGame);
+    } catch (_) {}
+
+    if (demoVenues.length === 0) {
+      // Fallback demo venue
+      demoVenues = [{
+        id: 'demo', venueName: 'Natural History Museum', spaceName: 'Cromwell Road',
+        city: 'London', country: 'GB', lat: 51.4965109, lng: -0.1760019,
+        tourUrl: 'https://my.matterport.com/show/?m=8sZPNjQPLGm',
+      }];
+    }
+
+    setShuffledVenues(demoVenues.slice(0, 1));
     setVenuePool([]);
     setCurrentRoundIndex(0);
     setResults([]);
-    setCurrentGuess(null);
-    setGuessLocked(false);
-    setCurrentDistance(null);
-    setCurrentScore(0);
-    setTimerActive(false);
-    setPreRoundCountdown(true);
-    setShowCelebration(false);
-    setGameState(GAME_STATES.PLAYING);
-    // Mark as demo so results don't go to leaderboard
     setIsDemo(true);
+    resetRoundState();
+    setGameState(GAME_STATES.PLAYING);
   }, []);
 
-  const startGame = useCallback((levelId = 1) => {
+  const startGame = useCallback(async () => {
     unlockAudio();
-    setSelectedLevel(levelId);
-
-    // For level 1: guarantee at least 1 outside-London venue in the 3 rounds
-    let selected;
-    if (levelId === 1 && OUTSIDE_VENUES.length > 0) {
-      const outsideShuffled = shuffleArray(OUTSIDE_VENUES);
-      const londonShuffled = shuffleArray(LONDON_VENUES);
-      // Pick at least 1 outside-London, rest random from full pool
-      const guaranteed = outsideShuffled[0];
-      const remaining = shuffleArray([...outsideShuffled.slice(1), ...londonShuffled]);
-      const trio = shuffleArray([guaranteed, ...remaining.slice(0, TOTAL_ROUNDS - 1)]);
-      const pool = remaining.slice(TOTAL_ROUNDS - 1);
-      selected = trio;
-      setShuffledVenues(selected);
-      setVenuePool(pool);
-    } else {
-      const venues = VENUES_BY_LEVEL[levelId] || VENUES_BY_LEVEL[1];
-      const shuffled = shuffleArray(venues);
-      selected = shuffled.slice(0, TOTAL_ROUNDS);
-      setShuffledVenues(selected);
-      setVenuePool(shuffled.slice(TOTAL_ROUNDS));
-    }
-    setCurrentRoundIndex(0);
-    setResults([]);
-    setCurrentGuess(null);
-    setGuessLocked(false);
-    setCurrentDistance(null);
-    setCurrentScore(0);
-    setTimerActive(false);
-    setPreRoundCountdown(true);
-    setShowCelebration(false);
-    setGameState(GAME_STATES.PLAYING);
-    setIsDemo(false);
-  }, [OUTSIDE_VENUES, LONDON_VENUES]);
+    try {
+      const res = await base44.functions.invoke('getRandomVenues', {});
+      const venues = (res?.data?.venues || []).map(venueToGame);
+      if (venues.length > 0) {
+        setShuffledVenues(venues);
+        setVenuePool([]);
+        setCurrentRoundIndex(0);
+        setResults([]);
+        setIsDemo(false);
+        resetRoundState();
+        setGameState(GAME_STATES.PLAYING);
+        return;
+      }
+    } catch (_) {}
+    // Fallback: no venues in Base44 yet
+    alert('No active venues found. Please add venues in the admin panel.');
+  }, []);
 
   const handleTourError = useCallback(() => {
     setVenuePool(pool => {
@@ -130,14 +148,10 @@ export default function Game() {
   const lockGuess = useCallback((guess) => {
     if (guessLocked) return;
     const venue = shuffledVenues[currentRoundIndex];
-    const dist = guess
-      ? calculateDistance(guess.lat, guess.lng, venue.lat, venue.lng)
-      : null;
+    const dist = guess ? calculateDistance(guess.lat, guess.lng, venue.lat, venue.lng) : null;
     const score = dist ? calculateScore(dist.km) : 0;
 
     playLockSound();
-
-    // Celebration or error sound based on score
     if (score >= GOOD_SCORE_THRESHOLD) {
       playCelebrationSound();
       setShowCelebration(true);
@@ -166,10 +180,8 @@ export default function Game() {
   const handleNextRound = useCallback(() => {
     const venue = shuffledVenues[currentRoundIndex];
     setResults(prev => [...prev, {
-      venueId: venue.id,
-      guess: currentGuess,
-      distance: currentDistance,
-      score: currentScore,
+      venueId: venue.id, guess: currentGuess,
+      distance: currentDistance, score: currentScore,
     }]);
     const isLastRound = currentRoundIndex >= shuffledVenues.length - 1;
     if (isLastRound && isDemo) {
@@ -188,33 +200,29 @@ export default function Game() {
     }
   }, [currentRoundIndex, shuffledVenues, currentGuess, currentDistance, currentScore, isDemo]);
 
-  const saveToLeaderboard = useCallback(async (formData, finalResults) => {
+  const handleContactSubmit = useCallback(async (formData) => {
+    const finalResults = [...results, {
+      venueId: shuffledVenues[currentRoundIndex]?.id,
+      guess: currentGuess, distance: currentDistance, score: currentScore,
+    }];
     const total = finalResults.reduce((sum, r) => sum + (r.score || 0), 0);
     const withDist = finalResults.filter(r => r.distance);
     const avgKm = withDist.length > 0
-      ? withDist.reduce((sum, r) => sum + (r.distance?.km || 0), 0) / withDist.length
-      : 0;
-    const name = formData ? `${formData.firstName} ${formData.lastName}`.trim() : 'Anonymous';
-    await base44.entities.LeaderboardEntry.create({
-      player_name: name,
-      email: formData?.email || '',
-      total_score: total,
-      rounds_played: finalResults.length,
-      avg_distance_km: Math.round(avgKm),
-    });
-    if (formData?.email) setPlayerEmail(formData.email);
-  }, []);
+      ? withDist.reduce((sum, r) => sum + (r.distance?.km || 0), 0) / withDist.length : 0;
 
-  const handleContactSubmit = useCallback((formData) => {
-    const finalResults = [...results, {
-      venueId: shuffledVenues[currentRoundIndex]?.id,
-      guess: currentGuess,
-      distance: currentDistance,
-      score: currentScore,
-    }];
-    saveToLeaderboard(formData, finalResults);
+    try {
+      await base44.functions.invoke('submitScore', {
+        player_name: `${formData.firstName} ${formData.lastName}`.trim(),
+        email: formData.email,
+        total_score: total,
+        rounds_played: finalResults.length,
+        avg_distance_km: Math.round(avgKm),
+      });
+      if (formData.email) setPlayerEmail(formData.email);
+    } catch (_) {}
+
     setGameState(GAME_STATES.SUMMARY);
-  }, [results, shuffledVenues, currentRoundIndex, currentGuess, currentDistance, currentScore, saveToLeaderboard]);
+  }, [results, shuffledVenues, currentRoundIndex, currentGuess, currentDistance, currentScore]);
 
   const handleContactSkip = useCallback(() => {
     setGameState(GAME_STATES.SUMMARY);
@@ -233,21 +241,20 @@ export default function Game() {
   const handleZoom = useCallback((direction) => {
     const map = mapRef.current;
     if (!map) return;
-    const current = map.getZoom();
-    map.setZoom(direction === 'in' ? current + 1 : current - 1, { animate: true });
+    map.setZoom(direction === 'in' ? map.getZoom() + 1 : map.getZoom() - 1, { animate: true });
   }, []);
 
   const handleReset = useCallback(() => {
     const map = mapRef.current;
     if (!map) return;
-    map.setView(selectedLevel === 1 ? [54.5, -3.5] : [20, 0], selectedLevel === 1 ? 5 : 2, { animate: true });
-  }, [selectedLevel]);
+    map.setView([54.5, -3.5], 5, { animate: true });
+  }, []);
 
   const currentVenue = shuffledVenues[currentRoundIndex];
   const isLastRound = currentRoundIndex >= shuffledVenues.length - 1;
 
   if (gameState === GAME_STATES.SPLASH) {
-    return <SplashScreen onStart={startGame} onDemo={startDemo} />;
+    return <SplashScreen onStart={startGame} onDemo={startDemo} prizes={prizes} />;
   }
 
   if (gameState === GAME_STATES.SUMMARY) {
@@ -259,6 +266,8 @@ export default function Game() {
         totalScore={totalScore}
         playerEmail={playerEmail}
         onPlayAgain={() => setGameState(GAME_STATES.SPLASH)}
+        prizes={prizes}
+        competitionId={activeCompetition?.id}
       />
     );
   }
@@ -266,8 +275,13 @@ export default function Game() {
   if (gameState === GAME_STATES.CONTACT) {
     return (
       <div className="min-h-screen bg-hb-bg">
-        <GameHeader level={selectedLevel} />
-        <ContactForm onSubmit={handleContactSubmit} onSkip={handleContactSkip} />
+        <GameHeader />
+        <ContactForm
+          onSubmit={handleContactSubmit}
+          onSkip={handleContactSkip}
+          competitionId={activeCompetition?.id}
+          totalScore={results.reduce((sum, r) => sum + (r.score || 0), 0) + currentScore}
+        />
       </div>
     );
   }
@@ -276,56 +290,33 @@ export default function Game() {
     <div className="bg-hb-bg flex flex-col" style={{ minHeight: '100dvh' }}>
       <CelebrationOverlay active={showCelebration} />
 
-      {/* PLAYING — mobile-first arcade layout */}
       {gameState === GAME_STATES.PLAYING && currentVenue && (
         <div style={{ position: 'fixed', inset: 0, background: '#121212' }}>
-
-          {/* Header — sits above everything */}
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 30, background: 'white' }}>
-            <GameHeader level={selectedLevel} round={currentRoundIndex + 1} totalRounds={TOTAL_ROUNDS} />
+            <GameHeader round={currentRoundIndex + 1} totalRounds={TOTAL_ROUNDS} />
           </div>
-
-          {/* Tour — full bleed from header to bottom, behind map */}
           <div style={{ position: 'absolute', top: 88, left: 0, right: 0, bottom: 0, zIndex: -10, overflow: 'hidden' }}>
             <MatterportViewer
               tourUrl={currentVenue.tourUrl}
               nextTourUrl={shuffledVenues[currentRoundIndex + 1]?.tourUrl}
               onError={handleTourError}
             />
-            {preRoundCountdown && (
-              <PreRoundCountdown onComplete={handlePreRoundComplete} />
-            )}
+            {preRoundCountdown && <PreRoundCountdown onComplete={handlePreRoundComplete} />}
           </div>
-
-          {/* Map section — margin, rounded corners */}
           <div style={{ position: 'absolute', bottom: 0, left: '1em', right: '1em', height: '40vh', zIndex: 10 }}>
-
-            {/* Map tiles — clipped with border-radius, NO overflow:hidden escaping controls */}
-            <div style={{
-              position: 'absolute',
-              inset: 0,
-              overflow: 'hidden',
-              borderTopLeftRadius: 48,
-              borderTopRightRadius: 48,
-              borderBottomLeftRadius: 24,
-              borderBottomRightRadius: 24,
-            }}>
+            <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', borderTopLeftRadius: 48, borderTopRightRadius: 48, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 }}>
               <GuessMap
                 onGuessPlaced={handleGuessPlaced}
                 guessLocked={guessLocked}
                 currentGuess={currentGuess}
                 onLockGuess={() => lockGuess(currentGuess)}
                 fill
-                mapCenter={selectedLevel === 1 ? [54.5, -3.5] : undefined}
-                mapZoom={selectedLevel === 1 ? 5 : undefined}
+                mapCenter={[54.5, -3.5]}
+                mapZoom={5}
                 mapRef={mapRef}
               />
             </div>
-
-
           </div>
-
-          {/* Controls overlay — SIBLING to map section, not inside overflow:hidden */}
           <ArcadeMapControls
             onZoom={handleZoom}
             onReset={handleReset}
@@ -337,10 +328,9 @@ export default function Game() {
         </div>
       )}
 
-      {/* ROUND RESULT */}
       {gameState === GAME_STATES.ROUND_RESULT && currentVenue && (
         <div className="flex flex-col" style={{ minHeight: '100dvh' }}>
-          <GameHeader level={selectedLevel} round={currentRoundIndex + 1} totalRounds={TOTAL_ROUNDS} />
+          <GameHeader round={currentRoundIndex + 1} totalRounds={TOTAL_ROUNDS} />
           <div className="flex-1 p-3 md:p-4">
             <RoundResult
               roundNumber={currentRoundIndex + 1}

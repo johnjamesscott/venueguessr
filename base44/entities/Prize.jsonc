@@ -1,0 +1,28 @@
+{
+  "name": "Prize",
+  "type": "object",
+  "properties": {
+    "competition_id": {
+      "type": "string"
+    },
+    "position": {
+      "type": "number",
+      "description": "1 = 1st place, 2 = 2nd place, etc."
+    },
+    "prize_name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "competition_id",
+    "position",
+    "prize_name"
+  ]
+}
