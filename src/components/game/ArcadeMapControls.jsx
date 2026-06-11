@@ -44,8 +44,8 @@ export default function ArcadeMapControls({ onZoom, timerSeconds, timerActive, o
   const [resetPressed, setResetPressed] = React.useState(false);
 
   return (
-    // Absolutely fills the map wrapper; z-index above map tiles (zIndex: 1 inside the clipped div, 20 here)
-    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 20 }}>
+    // Positioned over the bottom 40vh map area, as a sibling (not child) of the clipped map div
+    <div style={{ position: 'absolute', bottom: 0, left: '1em', right: '1em', height: '40vh', pointerEvents: 'none', zIndex: 20 }}>
 
       {/* Timer — centred, straddling the top edge of the map */}
       <div style={{

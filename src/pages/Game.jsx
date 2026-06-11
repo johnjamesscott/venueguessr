@@ -274,10 +274,10 @@ export default function Game() {
             )}
           </div>
 
-          {/* Map section — margin, rounded corners, controls overlay on top */}
+          {/* Map section — margin, rounded corners */}
           <div style={{ position: 'absolute', bottom: 0, left: '1em', right: '1em', height: '40vh', zIndex: 10 }}>
 
-            {/* Map tiles — clipped with border-radius */}
+            {/* Map tiles — clipped with border-radius, NO overflow:hidden escaping controls */}
             <div style={{
               position: 'absolute',
               inset: 0,
@@ -298,16 +298,6 @@ export default function Game() {
                 mapRef={mapRef}
               />
             </div>
-
-            {/* Controls overlay — above map, timer straddling top edge */}
-            <ArcadeMapControls
-              onZoom={handleZoom}
-              onReset={handleReset}
-              timerSeconds={ROUND_SECONDS}
-              timerActive={timerActive}
-              onTimerExpire={handleTimerExpire}
-              roundIndex={currentRoundIndex}
-            />
 
             {/* Lock-in button — inside map, bottom */}
             {!guessLocked && currentGuess && (
@@ -337,6 +327,16 @@ export default function Game() {
               </div>
             )}
           </div>
+
+          {/* Controls overlay — SIBLING to map section, not inside overflow:hidden */}
+          <ArcadeMapControls
+            onZoom={handleZoom}
+            onReset={handleReset}
+            timerSeconds={ROUND_SECONDS}
+            timerActive={timerActive}
+            onTimerExpire={handleTimerExpire}
+            roundIndex={currentRoundIndex}
+          />
         </div>
       )}
 
