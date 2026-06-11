@@ -123,11 +123,17 @@ Deno.serve(async (req) => {
 
     const sendData = await sendRes.json();
 
-    if (!sendRes.ok) {
+    // Check for message-level errors (Mailjet returns 200 even on soft failures)
+    const msgStatus = sendData?.Messages?.[0]?.Status;
+    const msgErrors = sendData?.Messages?.[0]?.Errors;
+
+    if (!sendRes.ok || msgStatus === 'error') {
+      console.error('Mailjet send failed:', JSON.stringify(sendData));
       return Response.json({ error: 'Mailjet send failed', detail: sendData }, { status: 500 });
     }
 
-    return Response.json({ success: true });
+    console.log('Mailjet send response:', JSON.stringify(sendData));
+    return Response.json({ success: true, mailjet: sendData });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

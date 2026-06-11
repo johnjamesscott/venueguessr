@@ -226,7 +226,7 @@ export default function Game() {
       if (formData.email) setPlayerEmail(formData.email);
     } catch (_) {}
 
-    // Send post-game email (fire and forget)
+    // Send post-game email
     if (formData.email) {
       base44.functions.invoke('sendPostGameEmail', {
         first_name: formData.firstName,
@@ -239,7 +239,7 @@ export default function Game() {
           score: r.score || 0,
           distance_km: r.distance?.km || 0,
         })),
-      }).catch(() => {});
+      }).catch(err => console.error('sendPostGameEmail failed:', err));
     }
 
     setGameState(GAME_STATES.SUMMARY);
