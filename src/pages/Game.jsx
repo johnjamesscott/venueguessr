@@ -258,7 +258,7 @@ export default function Game() {
         <div style={{ position: 'fixed', inset: 0, background: '#121212' }}>
 
           {/* Header — sits above everything */}
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 30 }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 30, background: 'white' }}>
             <GameHeader level={selectedLevel} round={currentRoundIndex + 1} totalRounds={TOTAL_ROUNDS} />
           </div>
 
