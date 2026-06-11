@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { DEMO_VENUE } from '@/data/venues';
+import { VENUES_BY_LEVEL, LEVELS, LONDON_VENUES, OUTSIDE_VENUES, DEMO_VENUE } from '@/data/venues';
 import { calculateDistance, shuffleArray } from '@/utils/distance';
 import { calculateScore } from '@/utils/scoring';
 import { base44 } from '@/api/base44Client';
@@ -50,7 +50,6 @@ export default function Game() {
   const [venuePool, setVenuePool] = useState([]);
   const [showCelebration, setShowCelebration] = useState(false);
   const [isDemo, setIsDemo] = useState(false);
-  const [venuesLoading, setVenuesLoading] = useState(false);
 
 
 
@@ -73,25 +72,30 @@ export default function Game() {
     setIsDemo(true);
   }, []);
 
-  const startGame = useCallback(async (levelId = 1) => {
+  const startGame = useCallback((levelId = 1) => {
     unlockAudio();
     setSelectedLevel(levelId);
-    setVenuesLoading(true);
 
-    let selected = [];
-    let pool = [];
-    try {
-      const res = await base44.functions.invoke('getRandomVenues', { count: TOTAL_ROUNDS + 5 });
-      const all = res.data?.venues || [];
-      selected = all.slice(0, TOTAL_ROUNDS);
-      pool = all.slice(TOTAL_ROUNDS);
-    } catch (e) {
-      // Fallback to demo venue if API fails
-      selected = [DEMO_VENUE];
+    // For level 1: guarantee at least 1 outside-London venue in the 3 rounds
+    let selected;
+    if (levelId === 1 && OUTSIDE_VENUES.length > 0) {
+      const outsideShuffled = shuffleArray(OUTSIDE_VENUES);
+      const londonShuffled = shuffleArray(LONDON_VENUES);
+      // Pick at least 1 outside-London, rest random from full pool
+      const guaranteed = outsideShuffled[0];
+      const remaining = shuffleArray([...outsideShuffled.slice(1), ...londonShuffled]);
+      const trio = shuffleArray([guaranteed, ...remaining.slice(0, TOTAL_ROUNDS - 1)]);
+      const pool = remaining.slice(TOTAL_ROUNDS - 1);
+      selected = trio;
+      setShuffledVenues(selected);
+      setVenuePool(pool);
+    } else {
+      const venues = VENUES_BY_LEVEL[levelId] || VENUES_BY_LEVEL[1];
+      const shuffled = shuffleArray(venues);
+      selected = shuffled.slice(0, TOTAL_ROUNDS);
+      setShuffledVenues(selected);
+      setVenuePool(shuffled.slice(TOTAL_ROUNDS));
     }
-
-    setShuffledVenues(selected);
-    setVenuePool(pool);
     setCurrentRoundIndex(0);
     setResults([]);
     setCurrentGuess(null);
@@ -103,8 +107,7 @@ export default function Game() {
     setShowCelebration(false);
     setGameState(GAME_STATES.PLAYING);
     setIsDemo(false);
-    setVenuesLoading(false);
-  }, []);
+  }, [OUTSIDE_VENUES, LONDON_VENUES]);
 
   const handleTourError = useCallback(() => {
     setVenuePool(pool => {
@@ -192,7 +195,7 @@ export default function Game() {
       ? withDist.reduce((sum, r) => sum + (r.distance?.km || 0), 0) / withDist.length
       : 0;
     const name = formData ? `${formData.firstName} ${formData.lastName}`.trim() : 'Anonymous';
-    await base44.functions.invoke('submitScore', {
+    await base44.entities.LeaderboardEntry.create({
       player_name: name,
       email: formData?.email || '',
       total_score: total,
@@ -264,7 +267,7 @@ export default function Game() {
     return (
       <div className="min-h-screen bg-hb-bg">
         <GameHeader level={selectedLevel} />
-        <ContactForm onSubmit={handleContactSubmit} onSkip={handleContactSkip} score={results.reduce((s,r) => s + (r.score||0), 0) + currentScore} />
+        <ContactForm onSubmit={handleContactSubmit} onSkip={handleContactSkip} />
       </div>
     );
   }

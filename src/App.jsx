@@ -7,13 +7,6 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Game from './pages/Game';
 import VirtualKeyboard from './components/game/VirtualKeyboard';
-import AdminDashboard from './pages/admin/Dashboard';
-import Competitions from './pages/admin/Competitions';
-import Tours from './pages/admin/Tours';
-import Prizes from './pages/admin/Prizes';
-import AdminLeaderboard from './pages/admin/Leaderboard';
-import Leads from './pages/admin/Leads';
-import Analytics from './pages/admin/Analytics';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -38,13 +31,6 @@ const AuthenticatedApp = () => {
   return (
     <Routes>
       <Route path="/" element={<Game />} />
-      <Route path="/admin" element={<AdminDashboard />} />
-      <Route path="/admin/competitions" element={<Competitions />} />
-      <Route path="/admin/tours" element={<Tours />} />
-      <Route path="/admin/prizes" element={<Prizes />} />
-      <Route path="/admin/leaderboard" element={<AdminLeaderboard />} />
-      <Route path="/admin/leads" element={<Leads />} />
-      <Route path="/admin/analytics" element={<Analytics />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

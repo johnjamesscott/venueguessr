@@ -2,23 +2,25 @@
   "name": "LeaderboardEntry",
   "type": "object",
   "properties": {
-    "competition_id": {
-      "type": "string"
-    },
     "player_name": {
-      "type": "string"
+      "type": "string",
+      "description": "Display name of the player"
     },
     "email": {
-      "type": "string"
+      "type": "string",
+      "description": "Player email"
     },
     "total_score": {
-      "type": "number"
+      "type": "number",
+      "description": "Total score across all rounds"
     },
     "rounds_played": {
-      "type": "number"
+      "type": "number",
+      "description": "Number of rounds played"
     },
     "avg_distance_km": {
-      "type": "number"
+      "type": "number",
+      "description": "Average distance in km"
     }
   },
   "required": [
