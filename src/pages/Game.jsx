@@ -263,7 +263,7 @@ export default function Game() {
           </div>
 
           {/* Tour — full bleed from header to bottom, behind map */}
-          <div style={{ position: 'absolute', top: 60, left: 0, right: 0, bottom: 0, zIndex: -10, overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: 88, left: 0, right: 0, bottom: 0, zIndex: -10, overflow: 'hidden' }}>
             <MatterportViewer
               tourUrl={currentVenue.tourUrl}
               nextTourUrl={shuffledVenues[currentRoundIndex + 1]?.tourUrl}

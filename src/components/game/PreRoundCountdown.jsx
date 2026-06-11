@@ -13,7 +13,7 @@ export default function PreRoundCountdown({ onComplete }) {
   }, [count, onComplete]);
 
   return (
-    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm">
+    <div className="absolute inset-0 z-50 flex flex-col items-center bg-black/80 backdrop-blur-sm" style={{ justifyContent: 'flex-start', paddingTop: '20%' }}>
       <p className="text-hb-text-muted text-xs font-bold uppercase tracking-widest mb-4">Get ready…</p>
       <div
         key={count}
