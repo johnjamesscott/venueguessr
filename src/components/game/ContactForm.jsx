@@ -10,8 +10,9 @@ export default function ContactForm({ onSubmit, onSkip }) {
     const errs = {};
     if (!form.firstName.trim()) errs.firstName = 'First name is required';
     if (!form.lastName.trim()) errs.lastName = 'Last name is required';
-    if (!form.email.trim()) errs.email = 'Email is required';
+    if (!form.email.trim()) errs.email = 'Business email is required';
     else if (!/\S+@\S+\.\S+/.test(form.email)) errs.email = 'Enter a valid email address';
+    else if (/^[^@]+@(gmail|yahoo|hotmail|outlook|icloud|me|mac|live|msn|aol|protonmail|yandex|zoho|gmx|mail)\./i.test(form.email)) errs.email = 'Please use a business email address';
     return errs;
   };
 
@@ -109,7 +110,7 @@ export default function ContactForm({ onSubmit, onSkip }) {
 
           <div>
             <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-1.5">
-              Work email <span className="text-hb-red">*</span>
+              Business email <span className="text-hb-red">*</span>
             </label>
             <input
               type="email"
@@ -117,6 +118,7 @@ export default function ContactForm({ onSubmit, onSkip }) {
               onChange={e => handleChange('email', e.target.value)}
               className={`w-full bg-hb-surface-2 border rounded-hb-md px-3 py-2.5 text-white text-sm placeholder-hb-text-muted focus:outline-none focus:border-hb-red transition-colors ${errors.email ? 'border-red-500' : 'border-hb-border'}`}
               placeholder="jane@company.com"
+              autoComplete="off"
             />
             {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email}</p>}
           </div>

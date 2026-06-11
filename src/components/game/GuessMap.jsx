@@ -76,11 +76,18 @@ export default function GuessMap({ onGuessPlaced, guessLocked, currentGuess, onL
         {markerPos && <Marker position={markerPos} icon={hbIcon} />}
       </MapContainer>
 
-      {/* Place your pin hint */}
+      {/* Place your pin hint — full width */}
       {!guessLocked && !markerPos && (
-        <div className="absolute bottom-3 left-0 right-0 z-[1000] flex justify-center pointer-events-none">
-          <div className="flex items-center gap-2 bg-white/95 text-gray-700 text-xs font-semibold px-4 py-2.5 rounded-full shadow-lg border border-gray-200">
-            <svg width="12" height="16" viewBox="0 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <div style={{ position: 'absolute', bottom: 90, left: 12, right: 12, zIndex: 1000, pointerEvents: 'none' }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+            background: 'rgba(255,255,255,0.97)', color: '#333',
+            fontFamily: 'Montserrat, sans-serif', fontWeight: 700, fontSize: 18,
+            padding: '14px 20px', borderRadius: 50,
+            boxShadow: '0 4px 16px rgba(0,0,0,0.2)', border: '1px solid #e0e0e0',
+            width: '100%', boxSizing: 'border-box',
+          }}>
+            <svg width="16" height="21" viewBox="0 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M16 0C7.163 0 0 7.163 0 16c0 10 16 26 16 26s16-16 16-26C32 7.163 24.837 0 16 0z" fill="#AF231C"/>
               <circle cx="16" cy="15" r="5.5" fill="white"/>
             </svg>

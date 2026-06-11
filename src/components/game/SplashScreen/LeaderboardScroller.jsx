@@ -72,10 +72,10 @@ export default function LeaderboardScroller() {
             >
               {/* Rank */}
               <span style={{
-                fontSize: globalRank <= 3 ? 18 : 13,
+                fontSize: globalRank <= 3 ? 36 : 26,
                 fontWeight: 900,
                 color: '#FFD700',
-                minWidth: 24,
+                minWidth: 40,
                 textAlign: 'center',
                 lineHeight: 1,
               }}>
@@ -84,16 +84,16 @@ export default function LeaderboardScroller() {
 
               {/* Name + achievement */}
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: 12, fontWeight: 700, color: '#fff', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <p style={{ fontSize: 24, fontWeight: 700, color: '#fff', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {(entry.player_name || '').split(' ')[0]}
                 </p>
-                <p style={{ fontSize: 10, fontWeight: 500, color: 'rgba(255,255,255,0.5)', margin: 0 }}>
+                <p style={{ fontSize: 20, fontWeight: 500, color: 'rgba(255,255,255,0.5)', margin: 0 }}>
                   {entry.rounds_played ?? 0} rounds played
                 </p>
               </div>
 
               {/* Score */}
-              <span style={{ fontSize: 13, fontWeight: 800, color: '#FF4444', letterSpacing: 0.5 }}>
+              <span style={{ fontSize: 26, fontWeight: 800, color: '#FF4444', letterSpacing: 0.5 }}>
                 {(entry.total_score ?? 0).toLocaleString()}
               </span>
             </div>

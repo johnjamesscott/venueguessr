@@ -50,40 +50,25 @@ const styles = {
     animation: 'slideUpIn 0.8s ease-out 0.2s both',
     minHeight: 0,
   },
-  globeContainer: {
-    position: 'relative',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  titleOverlay: {
-    position: 'absolute',
-    bottom: 16,
-    left: 0,
-    right: 0,
-    textAlign: 'center',
-    zIndex: 20,
-    pointerEvents: 'none',
-  },
   title: {
-    fontSize: 42,
+    fontSize: 126,
     fontWeight: 900,
     color: '#fff',
     letterSpacing: '1px',
     margin: 0,
-    lineHeight: 1.05,
+    lineHeight: 1.0,
     textShadow: '0 2px 24px rgba(0,0,0,0.8), 0 0 40px rgba(255,68,68,0.5)',
     animation: 'fadeInScale 0.8s ease-out 0.3s both',
   },
   subtitle: {
-    fontSize: 15,
+    fontSize: 45,
     fontWeight: 400,
     color: 'rgba(255,255,255,0.8)',
     margin: '10px 0 0',
     textShadow: '0 1px 8px rgba(0,0,0,0.6)',
   },
   tagline: {
-    fontSize: 12,
+    fontSize: 36,
     fontWeight: 500,
     color: 'rgba(255,255,255,0.55)',
     margin: '4px 0 0',
@@ -101,18 +86,17 @@ const styles = {
   button: {
     background: '#fff',
     color: '#8B1A1A',
-    fontSize: 16,
+    fontSize: 48,
     fontWeight: 700,
     fontFamily: 'Montserrat, sans-serif',
     border: 'none',
     borderRadius: 50,
-    padding: '14px 48px',
+    padding: '28px 80px',
     cursor: 'pointer',
     letterSpacing: '0.5px',
     boxShadow: '0 4px 20px rgba(0,0,0,0.4), 0 0 20px rgba(255,255,255,0.15)',
     transition: 'transform 0.1s ease, box-shadow 0.1s ease',
     WebkitTapHighlightColor: 'transparent',
-    minHeight: 44,
     touchAction: 'manipulation',
     textTransform: 'uppercase',
     display: 'inline-flex',
@@ -127,7 +111,7 @@ const styles = {
     overflow: 'hidden',
   },
   leaderboardTitle: {
-    fontSize: 11,
+    fontSize: 33,
     fontWeight: 700,
     color: 'rgba(255,255,255,0.5)',
     letterSpacing: '1.5px',
@@ -189,43 +173,38 @@ export default function SplashScreen({ onStart }) {
         {/* Scanlines */}
         <div style={styles.scanlines} />
 
-        {/* Header — centred HeadBox logo, 2× bigger */}
+        {/* Header — centred HeadBox logo */}
         <div style={styles.header}>
           <a href="https://www.headbox.com" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center' }}>
             <img
               src="https://cdn.prod.website-files.com/63bd498079b1380a81c6e13b/63bd498079b1384ca2c6e19d_HeadBox-Logo-Brick-header.png"
               alt="HeadBox"
-              style={{ height: 64, objectFit: 'contain', filter: 'brightness(0) invert(1)', opacity: 0.95 }}
+              style={{ height: 256, objectFit: 'contain', filter: 'brightness(0) invert(1)', opacity: 0.95 }}
             />
           </a>
         </div>
 
-        {/* Main — globe with title overlaid absolutely */}
-        <div style={styles.main}>
-          <div style={{ position: 'relative', width: '100%', display: 'flex', justifyContent: 'center' }}>
-            {/* Globe */}
-            <div
-              className="splash-globe-wrapper"
-              style={{ width: 1400, height: 1400, position: 'relative', flexShrink: 0 }}
-            >
-              <SplineGlobe size={1400} />
-            </div>
+        {/* Globe — absolute behind everything */}
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 2,
+          pointerEvents: 'none',
+        }}>
+          <div className="splash-globe-wrapper" style={{ width: 2800, height: 2800, flexShrink: 0 }}>
+            <SplineGlobe size={2800} />
+          </div>
+        </div>
 
-            {/* Title + subtitle — absolutely centred over the globe */}
-            <div style={{
-              position: 'absolute',
-              top: '50%',
-              left: 0,
-              right: 0,
-              transform: 'translateY(-50%)',
-              textAlign: 'center',
-              zIndex: 20,
-              pointerEvents: 'none',
-            }}>
-              <h1 className="splash-title" style={styles.title}>VenueGuessr</h1>
-              <p className="splash-subtitle" style={styles.subtitle}>Test your venue knowledge</p>
-              <p className="splash-tagline" style={styles.tagline}>Drop in. Place a pin. Play to win.</p>
-            </div>
+        {/* Main — title + subtitle centred over globe */}
+        <div style={styles.main}>
+          <div style={{ textAlign: 'center', zIndex: 20, pointerEvents: 'none' }}>
+            <h1 className="splash-title" style={styles.title}>VenueGuessr</h1>
+            <p className="splash-subtitle" style={styles.subtitle}>Test your venue knowledge</p>
+            <p className="splash-tagline" style={styles.tagline}>Drop in. Place a pin. Play to win.</p>
           </div>
         </div>
 
@@ -243,7 +222,7 @@ export default function SplashScreen({ onStart }) {
             <span className="credit-flash" style={{
               fontFamily: 'Montserrat, sans-serif',
               fontWeight: 800,
-              fontSize: 13,
+              fontSize: 39,
               letterSpacing: '2px',
               textTransform: 'uppercase',
               color: '#ffffff',

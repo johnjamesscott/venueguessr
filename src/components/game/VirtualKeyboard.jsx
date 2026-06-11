@@ -14,7 +14,7 @@ export default function VirtualKeyboard() {
   const [visible, setVisible] = useState(false);
   const [target, setTarget] = useState(null);
   const [shifted, setShifted] = useState(false);
-  const [tab, setTab] = useState('alpha'); // 'alpha' | 'numbers'
+  const [tab, setTab] = useState('alpha');
 
   useEffect(() => {
     const onFocus = (e) => {
@@ -24,8 +24,7 @@ export default function VirtualKeyboard() {
         setVisible(true);
       }
     };
-    const onBlur = (e) => {
-      // Small delay so keyboard button taps don't immediately close it
+    const onBlur = () => {
       setTimeout(() => {
         const active = document.activeElement;
         if (!active || (active.tagName !== 'INPUT' && active.tagName !== 'TEXTAREA' && !active.isContentEditable)) {
@@ -34,7 +33,6 @@ export default function VirtualKeyboard() {
         }
       }, 150);
     };
-
     document.addEventListener('focusin', onFocus);
     document.addEventListener('focusout', onBlur);
     return () => {
@@ -47,8 +45,6 @@ export default function VirtualKeyboard() {
     const el = target;
     if (!el) return;
     el.focus();
-
-    // Use execCommand for contenteditable, direct value manipulation for inputs
     if (el.isContentEditable) {
       document.execCommand('insertText', false, char);
     } else {
@@ -65,7 +61,6 @@ export default function VirtualKeyboard() {
       el.dispatchEvent(new Event('input', { bubbles: true }));
       el.setSelectionRange(start + 1, start + 1);
     }
-
     if (shifted) setShifted(false);
   }, [target, shifted]);
 
@@ -80,24 +75,16 @@ export default function VirtualKeyboard() {
       const end = el.selectionEnd ?? el.value.length;
       if (start === end && start > 0) {
         const newVal = el.value.slice(0, start - 1) + el.value.slice(end);
-        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set
+        const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set
           || Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set;
-        if (nativeInputValueSetter) {
-          nativeInputValueSetter.call(el, newVal);
-        } else {
-          el.value = newVal;
-        }
+        if (setter) setter.call(el, newVal); else el.value = newVal;
         el.dispatchEvent(new Event('input', { bubbles: true }));
         el.setSelectionRange(start - 1, start - 1);
       } else if (start !== end) {
         const newVal = el.value.slice(0, start) + el.value.slice(end);
-        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set
+        const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set
           || Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set;
-        if (nativeInputValueSetter) {
-          nativeInputValueSetter.call(el, newVal);
-        } else {
-          el.value = newVal;
-        }
+        if (setter) setter.call(el, newVal); else el.value = newVal;
         el.dispatchEvent(new Event('input', { bubbles: true }));
         el.setSelectionRange(start, start);
       }
@@ -107,7 +94,6 @@ export default function VirtualKeyboard() {
   const submitForm = useCallback(() => {
     const el = target;
     if (!el) return;
-    // Try to find and submit the parent form
     const form = el.closest('form');
     if (form) {
       const submitBtn = form.querySelector('[type="submit"]');
@@ -120,102 +106,159 @@ export default function VirtualKeyboard() {
 
   const alphaRows = ROWS.map(row => row.map(c => shifted ? c.toUpperCase() : c));
 
+  // Key sizing: target 40vh total height, distributed across rows
+  const KEY_H = 'calc((40vh - 80px) / 5)';
+  const KEY_FONT = 'calc((40vh - 80px) / 8)';
+
   return (
     <div
       className="fixed bottom-0 left-0 right-0 z-[9999] select-none"
-      style={{ background: '#1a1a1a', borderTop: '1px solid #2a2a2a', padding: '8px 6px 12px' }}
-      onPointerDown={e => e.preventDefault()} // prevent blur of target
+      style={{
+        background: '#1a1a1a',
+        borderTop: '2px solid #2a2a2a',
+        padding: '10px 8px 14px',
+        height: '40vh',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 4,
+      }}
+      onPointerDown={e => e.preventDefault()}
     >
-      {/* Tab switcher */}
-      <div className="flex gap-1 mb-2 px-1">
+      {/* Tab switcher + close */}
+      <div className="flex gap-2 px-1" style={{ flexShrink: 0 }}>
         <button
           onPointerDown={e => { e.preventDefault(); setTab('alpha'); }}
-          className={`text-xs font-bold px-3 py-1 rounded-md transition-colors ${tab === 'alpha' ? 'bg-hb-red text-white' : 'text-white/50'}`}
+          style={{
+            fontSize: KEY_FONT,
+            fontWeight: 700,
+            padding: '4px 16px',
+            borderRadius: 8,
+            border: 'none',
+            background: tab === 'alpha' ? '#AF231C' : 'transparent',
+            color: tab === 'alpha' ? '#fff' : 'rgba(255,255,255,0.4)',
+            cursor: 'pointer',
+          }}
         >ABC</button>
         <button
           onPointerDown={e => { e.preventDefault(); setTab('numbers'); }}
-          className={`text-xs font-bold px-3 py-1 rounded-md transition-colors ${tab === 'numbers' ? 'bg-hb-red text-white' : 'text-white/50'}`}
+          style={{
+            fontSize: KEY_FONT,
+            fontWeight: 700,
+            padding: '4px 16px',
+            borderRadius: 8,
+            border: 'none',
+            background: tab === 'numbers' ? '#AF231C' : 'transparent',
+            color: tab === 'numbers' ? '#fff' : 'rgba(255,255,255,0.4)',
+            cursor: 'pointer',
+          }}
         >123</button>
-        <div className="flex-1" />
+        <div style={{ flex: 1 }} />
         <button
           onPointerDown={e => { e.preventDefault(); setVisible(false); setTarget(null); }}
-          className="text-xs text-white/40 px-3 py-1"
-        >✕ Close</button>
+          style={{ fontSize: KEY_FONT, color: 'rgba(255,255,255,0.35)', border: 'none', background: 'none', cursor: 'pointer', padding: '4px 12px' }}
+        >✕</button>
       </div>
 
       {tab === 'alpha' && (
-        <>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
           {alphaRows.map((row, ri) => (
-            <div key={ri} className="flex justify-center gap-1 mb-1">
+            <div key={ri} style={{ display: 'flex', justifyContent: 'center', gap: 4, flex: 1 }}>
               {ri === 2 && (
-                <button
-                  onPointerDown={e => { e.preventDefault(); setShifted(s => !s); }}
-                  className={`flex items-center justify-center rounded-md font-bold text-sm transition-colors ${shifted ? 'bg-hb-red text-white' : 'bg-[#2a2a2a] text-white/70'}`}
-                  style={{ minWidth: 42, height: 42 }}
-                >⇧</button>
+                <Key label="⇧" onPress={() => setShifted(s => !s)} active={shifted} h={KEY_H} f={KEY_FONT} minW="calc(8vw)" />
               )}
               {row.map(c => (
-                <Key key={c} label={c} onPress={() => press(c)} />
+                <Key key={c} label={c} onPress={() => press(c)} h={KEY_H} f={KEY_FONT} />
               ))}
               {ri === 2 && (
                 <button
                   onPointerDown={e => { e.preventDefault(); backspace(); }}
-                  className="flex items-center justify-center bg-[#2a2a2a] rounded-md text-white/70"
-                  style={{ minWidth: 42, height: 42 }}
+                  style={{
+                    minWidth: 'calc(8vw)', height: KEY_H,
+                    background: '#2a2a2a', border: 'none', borderRadius: 8, color: 'rgba(255,255,255,0.7)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0,
+                  }}
                 >
-                  <Delete size={16} />
+                  <Delete style={{ width: KEY_FONT, height: KEY_FONT }} />
                 </button>
               )}
             </div>
           ))}
-          <div className="flex justify-center gap-1 mt-1">
-            <Key label="," onPress={() => press(',')} width={42} />
-            <Key label="space" onPress={() => press(' ')} width={160} />
-            <Key label="." onPress={() => press('.')} width={42} />
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 4, flex: 1 }}>
+            <Key label="," onPress={() => press(',')} h={KEY_H} f={KEY_FONT} minW="calc(8vw)" />
+            <Key label="space" onPress={() => press(' ')} h={KEY_H} f={KEY_FONT} flex={1} />
+            <Key label="." onPress={() => press('.')} h={KEY_H} f={KEY_FONT} minW="calc(8vw)" />
             <button
               onPointerDown={e => { e.preventDefault(); submitForm(); }}
-              className="flex items-center justify-center bg-hb-red rounded-md text-white font-bold text-xs"
-              style={{ minWidth: 72, height: 42 }}
+              style={{
+                minWidth: 'calc(14vw)', height: KEY_H,
+                background: '#AF231C', border: 'none', borderRadius: 8,
+                color: '#fff', fontWeight: 700, fontSize: KEY_FONT,
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
             >Go ↵</button>
           </div>
-        </>
+        </div>
       )}
 
       {tab === 'numbers' && (
-        <>
-          <div className="flex justify-center gap-1 mb-1 flex-wrap">
-            {NUMBERS.map(c => <Key key={c} label={c} onPress={() => press(c)} />)}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 4, flex: 1 }}>
+            {NUMBERS.map(c => <Key key={c} label={c} onPress={() => press(c)} h={KEY_H} f={KEY_FONT} />)}
           </div>
-          <div className="flex justify-center gap-1 mb-1 flex-wrap">
-            {SYMBOLS.map(c => <Key key={c} label={c} onPress={() => press(c)} />)}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 4, flex: 1 }}>
+            {SYMBOLS.map(c => <Key key={c} label={c} onPress={() => press(c)} h={KEY_H} f={KEY_FONT} />)}
           </div>
-          <div className="flex justify-center gap-1 mt-1">
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 4, flex: 1 }}>
             <button
               onPointerDown={e => { e.preventDefault(); backspace(); }}
-              className="flex items-center justify-center bg-[#2a2a2a] rounded-md text-white/70"
-              style={{ minWidth: 60, height: 42 }}
+              style={{
+                minWidth: 'calc(12vw)', height: KEY_H,
+                background: '#2a2a2a', border: 'none', borderRadius: 8, color: 'rgba(255,255,255,0.7)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+              }}
             >
-              <Delete size={16} />
+              <Delete style={{ width: KEY_FONT, height: KEY_FONT }} />
             </button>
-            <Key label="space" onPress={() => press(' ')} width={160} />
+            <Key label="space" onPress={() => press(' ')} h={KEY_H} f={KEY_FONT} flex={1} />
             <button
               onPointerDown={e => { e.preventDefault(); submitForm(); }}
-              className="flex items-center justify-center bg-hb-red rounded-md text-white font-bold text-xs"
-              style={{ minWidth: 72, height: 42 }}
+              style={{
+                minWidth: 'calc(14vw)', height: KEY_H,
+                background: '#AF231C', border: 'none', borderRadius: 8,
+                color: '#fff', fontWeight: 700, fontSize: KEY_FONT,
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
             >Go ↵</button>
           </div>
-        </>
+        </div>
       )}
     </div>
   );
 }
 
-function Key({ label, onPress, width }) {
+function Key({ label, onPress, h, f, minW, flex, active }) {
   return (
     <button
       onPointerDown={e => { e.preventDefault(); onPress(); }}
-      className="flex items-center justify-center bg-[#2a2a2a] active:bg-[#3a3a3a] rounded-md text-white font-medium text-sm transition-colors"
-      style={{ minWidth: width || 34, height: 42, fontSize: label === 'space' ? 11 : 14, color: label === 'space' ? '#888' : undefined }}
+      style={{
+        minWidth: minW || 'calc(8.5vw)',
+        flex: flex || undefined,
+        height: h,
+        background: active ? '#AF231C' : '#2a2a2a',
+        border: 'none',
+        borderRadius: 8,
+        color: label === 'space' ? '#666' : '#fff',
+        fontWeight: 600,
+        fontSize: label === 'space' ? `calc(${f} * 0.6)` : f,
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        transition: 'background 0.08s',
+        WebkitTapHighlightColor: 'transparent',
+        touchAction: 'manipulation',
+        flexShrink: 0,
+      }}
     >
       {label === 'space' ? 'space' : label}
     </button>

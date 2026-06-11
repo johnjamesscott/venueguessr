@@ -299,33 +299,35 @@ export default function Game() {
               />
             </div>
 
-            {/* Lock-in button — inside map, bottom */}
-            {!guessLocked && currentGuess && (
-              <div style={{ position: 'absolute', bottom: 12, left: 12, right: 12, zIndex: 30 }}>
+            {/* Lock-in button — full width, always shown when pin placed */}
+            <div style={{ position: 'absolute', bottom: 12, left: 12, right: 12, zIndex: 30 }}>
+              {!guessLocked && (
                 <button
                   onClick={() => lockGuess(currentGuess)}
+                  disabled={!currentGuess}
                   style={{
                     width: '100%',
-                    height: 52,
-                    background: '#AF231C',
+                    height: 64,
+                    background: currentGuess ? '#AF231C' : 'rgba(175,35,28,0.35)',
                     color: '#fff',
                     border: 'none',
                     borderRadius: 50,
                     fontFamily: 'Montserrat, sans-serif',
                     fontWeight: 700,
-                    fontSize: 15,
+                    fontSize: 20,
                     letterSpacing: '0.5px',
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 0 rgba(0,0,0,0.3), 0 6px 16px rgba(175,35,28,0.4)',
+                    cursor: currentGuess ? 'pointer' : 'default',
+                    boxShadow: currentGuess ? '0 4px 0 rgba(0,0,0,0.3), 0 6px 16px rgba(175,35,28,0.4)' : 'none',
                     textTransform: 'uppercase',
                     WebkitTapHighlightColor: 'transparent',
                     touchAction: 'manipulation',
+                    transition: 'background 0.2s, box-shadow 0.2s',
                   }}
                 >
-                  Lock in your guess
+                  {currentGuess ? 'Lock in your guess' : 'Place your pin first'}
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           {/* Controls overlay — SIBLING to map section, not inside overflow:hidden */}
