@@ -113,7 +113,7 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         Messages: [{
-          From: { Email: 'hello@headbox.com', Name: 'HeadBox' },
+          From: { Email: 'noreply@headbox.com', Name: 'HeadBox' },
           To: [{ Email: email, Name: `${first_name} ${last_name}`.trim() }],
           Subject: `You scored ${(total_score || 0).toLocaleString()} pts in VenueGuessr 🎯`,
           HTMLPart: htmlBody,
