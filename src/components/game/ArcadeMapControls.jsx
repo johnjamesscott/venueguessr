@@ -50,11 +50,11 @@ export default function ArcadeMapControls({ onPan, onZoom, timerSeconds, timerAc
       alignItems: 'flex-start',
       pointerEvents: 'none',
       width: '100%',
-      paddingTop: 'calc(40vh * 0.30)', // 30% down the map height
+      paddingTop: 'calc(40vh * 0.55)', // 55% down the map height
     }}>
 
       {/* Reset button — left 25vw, on the map */}
-      <div style={{ width: '25vw', display: 'flex', justifyContent: 'center', pointerEvents: 'auto' }}>
+      <div style={{ width: '25vw', display: 'flex', justifyContent: 'center', alignItems: 'center', pointerEvents: 'auto' }}>
         <GBBtn size={52} fontSize={22} color='#3a3a3a' textColor='#fff' onClick={onReset}>
           {/* Reset icon — two curved arrows */}
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -97,6 +97,7 @@ export default function ArcadeMapControls({ onPan, onZoom, timerSeconds, timerAc
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
+        justifyContent: 'center',
         gap: 8,
         pointerEvents: 'auto',
       }}>
