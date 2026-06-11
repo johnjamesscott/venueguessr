@@ -243,7 +243,7 @@ export default function SplashScreen({ onStart, onDemo }) {
           <button
             className="splash-btn"
             style={{
-              background: 'transparent',
+              background: '#1f1f1f',
               color: '#fff',
               fontSize: 30,
               fontWeight: 700,
