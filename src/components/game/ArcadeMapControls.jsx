@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import CountdownTimer from './CountdownTimer';
 
-// Game Boy style button primitive
-function GBBtn({ size = 44, fontSize = 18, onClick, children, color = '#C0C0C0', textColor = '#1A1A1A' }) {
+function GBBtn({ size = 44, fontSize = 18, onClick, children }) {
   const [pressed, setPressed] = React.useState(false);
   return (
     <button
@@ -15,14 +14,14 @@ function GBBtn({ size = 44, fontSize = 18, onClick, children, color = '#C0C0C0',
         justifyContent: 'center',
         width: size,
         height: size,
-        background: pressed ? '#999' : color,
+        background: pressed ? '#555' : '#3a3a3a',
         border: 'none',
         borderRadius: 10,
         cursor: 'pointer',
         fontFamily: 'Montserrat, sans-serif',
         fontWeight: 800,
         fontSize,
-        color: textColor,
+        color: '#fff',
         userSelect: 'none',
         WebkitTapHighlightColor: 'transparent',
         touchAction: 'manipulation',
@@ -39,42 +38,27 @@ function GBBtn({ size = 44, fontSize = 18, onClick, children, color = '#C0C0C0',
   );
 }
 
-const TIMER_BG = 132;
+const TIMER_SIZE = 120;
 
-export default function ArcadeMapControls({ onPan, onZoom, timerSeconds, timerActive, onTimerExpire, roundIndex, onReset }) {
+export default function ArcadeMapControls({ onZoom, timerSeconds, timerActive, onTimerExpire, roundIndex, onReset }) {
+  const [resetPressed, setResetPressed] = React.useState(false);
+
   return (
-    // This wrapper is placed at bottom:'40vh' in Game.jsx — aligns to top edge of map
-    // paddingTop pushes buttons DOWN into the map
-    <div style={{
-      display: 'flex',
-      alignItems: 'flex-start',
-      pointerEvents: 'none',
-      width: '100%',
-      paddingTop: 'calc(40vh * 0.55)', // 55% down the map height
-    }}>
+    // Absolutely fills the map wrapper; z-index above map tiles (zIndex: 1 inside the clipped div, 20 here)
+    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 20 }}>
 
-      {/* Reset button — left 25vw, on the map */}
-      <div style={{ width: '25vw', display: 'flex', justifyContent: 'center', alignItems: 'center', pointerEvents: 'auto' }}>
-        <GBBtn size={52} fontSize={22} color='#3a3a3a' textColor='#fff' onClick={onReset}>
-          {/* Reset icon — two curved arrows */}
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-            <path d="M3 3v5h5" />
-          </svg>
-        </GBBtn>
-      </div>
-
-      {/* Timer — 50vw, straddling the tour/map boundary via translateY(-50%) from Game.jsx wrapper */}
+      {/* Timer — centred, straddling the top edge of the map */}
       <div style={{
-        width: '50vw',
-        display: 'flex',
-        justifyContent: 'center',
-        transform: 'translateY(calc(-100% + calc(40vh * 0.40)))', // shifted down 40% of map height
+        position: 'absolute',
+        top: 0,
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
         pointerEvents: 'auto',
+        zIndex: 22,
       }}>
         <div style={{
-          width: TIMER_BG,
-          height: TIMER_BG,
+          width: TIMER_SIZE,
+          height: TIMER_SIZE,
           background: '#1f1f1f',
           borderRadius: '50%',
           display: 'flex',
@@ -91,18 +75,48 @@ export default function ArcadeMapControls({ onPan, onZoom, timerSeconds, timerAc
         </div>
       </div>
 
-      {/* Zoom buttons — right 25vw, on the map */}
+      {/* Reset map — pill button, top left */}
+      <div style={{ position: 'absolute', top: 16, left: 16, pointerEvents: 'auto' }}>
+        <button
+          onPointerDown={() => { setResetPressed(true); onReset?.(); }}
+          onPointerUp={() => setResetPressed(false)}
+          onPointerLeave={() => setResetPressed(false)}
+          style={{
+            background: resetPressed ? '#555' : '#3a3a3a',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 50,
+            padding: '10px 18px',
+            fontFamily: 'Montserrat, sans-serif',
+            fontWeight: 700,
+            fontSize: 13,
+            cursor: 'pointer',
+            userSelect: 'none',
+            WebkitTapHighlightColor: 'transparent',
+            touchAction: 'manipulation',
+            transform: resetPressed ? 'scale(0.93) translateY(2px)' : 'scale(1)',
+            boxShadow: resetPressed
+              ? 'inset 0 2px 4px rgba(0,0,0,0.4)'
+              : '0 4px 0 rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.25)',
+            transition: 'transform 0.08s ease, box-shadow 0.08s ease, background 0.08s ease',
+          }}
+        >
+          Reset map
+        </button>
+      </div>
+
+      {/* Zoom buttons — top right */}
       <div style={{
-        width: '25vw',
+        position: 'absolute',
+        top: 16,
+        right: 16,
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
         gap: 8,
         pointerEvents: 'auto',
       }}>
-        <GBBtn size={44} fontSize={26} color='#3a3a3a' textColor='#fff' onClick={() => onZoom('in')}>+</GBBtn>
-        <GBBtn size={44} fontSize={26} color='#3a3a3a' textColor='#fff' onClick={() => onZoom('out')}>−</GBBtn>
+        <GBBtn size={44} fontSize={26} onClick={() => onZoom('in')}>+</GBBtn>
+        <GBBtn size={44} fontSize={26} onClick={() => onZoom('out')}>−</GBBtn>
       </div>
 
     </div>

@@ -274,24 +274,33 @@ export default function Game() {
             )}
           </div>
 
-          {/* Map — positioned over bottom 40vh of tour */}
-          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '40vh', zIndex: 0, overflow: 'hidden', borderTop: '2px solid #2a2a2a' }}>
-            <GuessMap
-              onGuessPlaced={handleGuessPlaced}
-              guessLocked={guessLocked}
-              currentGuess={currentGuess}
-              onLockGuess={() => lockGuess(currentGuess)}
-              fill
-              mapCenter={selectedLevel === 1 ? [54.5, -3.5] : undefined}
-              mapZoom={selectedLevel === 1 ? 5 : undefined}
-              mapRef={mapRef}
-            />
-          </div>
+          {/* Map section — margin, rounded corners, controls overlay on top */}
+          <div style={{ position: 'absolute', bottom: 0, left: '1em', right: '1em', height: '40vh', zIndex: 10 }}>
 
-          {/* Controls — lifted to root stacking context, above map */}
-          <div style={{ position: 'absolute', bottom: '40vh', left: 0, right: 0, zIndex: 20, pointerEvents: 'none' }}>
+            {/* Map tiles — clipped with border-radius */}
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              overflow: 'hidden',
+              borderTopLeftRadius: 48,
+              borderTopRightRadius: 48,
+              borderBottomLeftRadius: 24,
+              borderBottomRightRadius: 24,
+            }}>
+              <GuessMap
+                onGuessPlaced={handleGuessPlaced}
+                guessLocked={guessLocked}
+                currentGuess={currentGuess}
+                onLockGuess={() => lockGuess(currentGuess)}
+                fill
+                mapCenter={selectedLevel === 1 ? [54.5, -3.5] : undefined}
+                mapZoom={selectedLevel === 1 ? 5 : undefined}
+                mapRef={mapRef}
+              />
+            </div>
+
+            {/* Controls overlay — above map, timer straddling top edge */}
             <ArcadeMapControls
-              onPan={handlePan}
               onZoom={handleZoom}
               onReset={handleReset}
               timerSeconds={ROUND_SECONDS}
@@ -299,35 +308,35 @@ export default function Game() {
               onTimerExpire={handleTimerExpire}
               roundIndex={currentRoundIndex}
             />
-          </div>
 
-          {/* Lock-in button — floats above the map bottom */}
-          {!guessLocked && currentGuess && (
-            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 20, padding: '8px 16px', background: '#1a1a1a' }}>
-              <button
-                onClick={() => lockGuess(currentGuess)}
-                style={{
-                  width: '100%',
-                  height: 52,
-                  background: '#AF231C',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: 50,
-                  fontFamily: 'Montserrat, sans-serif',
-                  fontWeight: 700,
-                  fontSize: 15,
-                  letterSpacing: '0.5px',
-                  cursor: 'pointer',
-                  boxShadow: '0 4px 0 rgba(0,0,0,0.3), 0 6px 16px rgba(175,35,28,0.4)',
-                  textTransform: 'uppercase',
-                  WebkitTapHighlightColor: 'transparent',
-                  touchAction: 'manipulation',
-                }}
-              >
-                Lock in your guess
-              </button>
-            </div>
-          )}
+            {/* Lock-in button — inside map, bottom */}
+            {!guessLocked && currentGuess && (
+              <div style={{ position: 'absolute', bottom: 12, left: 12, right: 12, zIndex: 30 }}>
+                <button
+                  onClick={() => lockGuess(currentGuess)}
+                  style={{
+                    width: '100%',
+                    height: 52,
+                    background: '#AF231C',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 50,
+                    fontFamily: 'Montserrat, sans-serif',
+                    fontWeight: 700,
+                    fontSize: 15,
+                    letterSpacing: '0.5px',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 0 rgba(0,0,0,0.3), 0 6px 16px rgba(175,35,28,0.4)',
+                    textTransform: 'uppercase',
+                    WebkitTapHighlightColor: 'transparent',
+                    touchAction: 'manipulation',
+                  }}
+                >
+                  Lock in your guess
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
