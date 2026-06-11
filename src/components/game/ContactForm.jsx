@@ -70,14 +70,14 @@ export default function ContactForm({ onSubmit, onSkip, competitionId, totalScor
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-1.5">First name <span className="text-hb-red">*</span></label>
-              <input type="text" value={form.firstName} onChange={e => handleChange('firstName', e.target.value)}
+              <input type="text" name="firstName" value={form.firstName} onChange={e => handleChange('firstName', e.target.value)}
                 className={`w-full bg-hb-surface-2 border rounded-hb-md px-3 py-2.5 text-white text-sm placeholder-hb-text-muted focus:outline-none focus:border-hb-red transition-colors ${errors.firstName ? 'border-red-500' : 'border-hb-border'}`}
                 placeholder="Jane" />
               {errors.firstName && <p className="text-red-400 text-xs mt-1">{errors.firstName}</p>}
             </div>
             <div>
               <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-1.5">Last name <span className="text-hb-red">*</span></label>
-              <input type="text" value={form.lastName} onChange={e => handleChange('lastName', e.target.value)}
+              <input type="text" name="lastName" value={form.lastName} onChange={e => handleChange('lastName', e.target.value)}
                 className={`w-full bg-hb-surface-2 border rounded-hb-md px-3 py-2.5 text-white text-sm placeholder-hb-text-muted focus:outline-none focus:border-hb-red transition-colors ${errors.lastName ? 'border-red-500' : 'border-hb-border'}`}
                 placeholder="Smith" />
               {errors.lastName && <p className="text-red-400 text-xs mt-1">{errors.lastName}</p>}
@@ -94,7 +94,7 @@ export default function ContactForm({ onSubmit, onSkip, competitionId, totalScor
 
           <div>
             <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-1.5">Company</label>
-            <input type="text" value={form.company} onChange={e => handleChange('company', e.target.value)}
+            <input type="text" name="company" value={form.company} onChange={e => handleChange('company', e.target.value)}
               className="w-full bg-hb-surface-2 border border-hb-border rounded-hb-md px-3 py-2.5 text-white text-sm placeholder-hb-text-muted focus:outline-none focus:border-hb-red transition-colors"
               placeholder="Acme Events Ltd" />
           </div>

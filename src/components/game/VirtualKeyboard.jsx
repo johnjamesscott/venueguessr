@@ -41,16 +41,22 @@ export default function VirtualKeyboard() {
     };
   }, []);
 
+  const isEmailField = target?.type === 'email' || target?.inputMode === 'email' || target?.autocomplete === 'email';
+  const isNameField = ['firstName', 'lastName', 'company'].includes(target?.name) || ['firstName', 'lastName', 'company'].includes(target?.id);
+
   const press = useCallback((char) => {
     const el = target;
     if (!el) return;
     el.focus();
+    // Auto-capitalise first character for name fields
+    const isName = ['firstName', 'lastName', 'company'].includes(el?.name) || ['firstName', 'lastName', 'company'].includes(el?.id);
+    const finalChar = (isName && el.value.length === 0) ? char.toUpperCase() : char;
     if (el.isContentEditable) {
-      document.execCommand('insertText', false, char);
+      document.execCommand('insertText', false, finalChar);
     } else {
       const start = el.selectionStart ?? el.value.length;
       const end = el.selectionEnd ?? el.value.length;
-      const newVal = el.value.slice(0, start) + char + el.value.slice(end);
+      const newVal = el.value.slice(0, start) + finalChar + el.value.slice(end);
       const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set
         || Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set;
       if (nativeInputValueSetter) {
@@ -59,7 +65,8 @@ export default function VirtualKeyboard() {
         el.value = newVal;
       }
       el.dispatchEvent(new Event('input', { bubbles: true }));
-      el.setSelectionRange(start + 1, start + 1);
+      const newPos = start + finalChar.length;
+      el.setSelectionRange(newPos, newPos);
     }
     if (shifted) setShifted(false);
   }, [target, shifted]);
@@ -184,9 +191,20 @@ export default function VirtualKeyboard() {
             </div>
           ))}
           <div style={{ display: 'flex', justifyContent: 'center', gap: 4, flex: 1 }}>
-            <Key label="," onPress={() => press(',')} h={KEY_H} f={KEY_FONT} minW="calc(8vw)" />
-            <Key label="space" onPress={() => press(' ')} h={KEY_H} f={KEY_FONT} flex={1} />
-            <Key label="." onPress={() => press('.')} h={KEY_H} f={KEY_FONT} minW="calc(8vw)" />
+            {isEmailField ? (
+              <>
+                <Key label="@" onPress={() => press('@')} h={KEY_H} f={KEY_FONT} minW="calc(10vw)" />
+                <Key label=".com" onPress={() => press('.com')} h={KEY_H} f={KEY_FONT} minW="calc(14vw)" />
+                <Key label="space" onPress={() => press(' ')} h={KEY_H} f={KEY_FONT} flex={1} />
+                <Key label="." onPress={() => press('.')} h={KEY_H} f={KEY_FONT} minW="calc(8vw)" />
+              </>
+            ) : (
+              <>
+                <Key label="," onPress={() => press(',')} h={KEY_H} f={KEY_FONT} minW="calc(8vw)" />
+                <Key label="space" onPress={() => press(' ')} h={KEY_H} f={KEY_FONT} flex={1} />
+                <Key label="." onPress={() => press('.')} h={KEY_H} f={KEY_FONT} minW="calc(8vw)" />
+              </>
+            )}
             <button
               onPointerDown={e => { e.preventDefault(); submitForm(); }}
               style={{
