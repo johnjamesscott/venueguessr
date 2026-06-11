@@ -1,0 +1,37 @@
+{
+  "name": "Lead",
+  "type": "object",
+  "properties": {
+    "competition_id": {
+      "type": "string"
+    },
+    "first_name": {
+      "type": "string"
+    },
+    "last_name": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "company": {
+      "type": "string"
+    },
+    "score": {
+      "type": "number"
+    },
+    "consent": {
+      "type": "boolean",
+      "default": false
+    },
+    "mailjet_synced": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "email",
+    "first_name",
+    "last_name"
+  ]
+}

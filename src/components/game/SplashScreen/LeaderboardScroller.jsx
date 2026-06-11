@@ -6,21 +6,35 @@ const MEDAL = ['🥇', '🥈', '🥉'];
 const PAGE_SIZE = 4;
 
 async function fetchLeaderboard() {
+  // Try to filter by active competition
+  try {
+    const res = await base44.functions.invoke('getActiveCompetition', {});
+    const competition = res.data?.competition;
+    const prizes = res.data?.prizes || [];
+    if (competition?.id) {
+      const entries = await base44.entities.LeaderboardEntry.filter({ competition_id: competition.id });
+      const sorted = entries.sort((a, b) => b.total_score - a.total_score).slice(0, 12);
+      return { entries: sorted, prizes };
+    }
+  } catch (_) {}
   const entries = await base44.entities.LeaderboardEntry.list('-total_score', 12);
-  return entries;
+  return { entries, prizes: [] };
 }
 
 export default function LeaderboardScroller() {
   const [page, setPage] = useState(0);
   const timerRef = useRef(null);
 
-  const { data: entries = [], isLoading } = useQuery({
+  const { data = {}, isLoading } = useQuery({
     queryKey: ['leaderboard-splash'],
     queryFn: fetchLeaderboard,
     staleTime: 30_000,
     refetchInterval: 30_000,
     retry: 2,
   });
+
+  const entries = data.entries || [];
+  const prizes = data.prizes || [];
 
   const totalPages = Math.max(1, Math.ceil(entries.length / PAGE_SIZE));
 
@@ -87,9 +101,15 @@ export default function LeaderboardScroller() {
                 <p style={{ fontSize: 24, fontWeight: 700, color: '#fff', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {(entry.player_name || '').split(' ')[0]}
                 </p>
-                <p style={{ fontSize: 20, fontWeight: 500, color: 'rgba(255,255,255,0.5)', margin: 0 }}>
-                  {entry.rounds_played ?? 0} rounds played
-                </p>
+                {prizes[globalRank - 1] ? (
+                  <p style={{ fontSize: 18, fontWeight: 600, color: '#FFD700', margin: 0 }}>
+                    🏆 {prizes[globalRank - 1].prize_name}
+                  </p>
+                ) : (
+                  <p style={{ fontSize: 20, fontWeight: 500, color: 'rgba(255,255,255,0.5)', margin: 0 }}>
+                    {entry.rounds_played ?? 0} rounds played
+                  </p>
+                )}
               </div>
 
               {/* Score */}

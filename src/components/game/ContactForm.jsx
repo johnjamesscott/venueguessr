@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
+import { base44 } from '@/api/base44Client';
 
-export default function ContactForm({ onSubmit, onSkip }) {
+export default function ContactForm({ onSubmit, onSkip, score }) {
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', company: '' });
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
@@ -19,36 +20,28 @@ export default function ContactForm({ onSubmit, onSkip }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const errs = validate();
-    if (Object.keys(errs).length > 0) {
-      setErrors(errs);
-      return;
-    }
-
+    if (Object.keys(errs).length > 0) { setErrors(errs); return; }
     setSubmitting(true);
-
-    // Submit to HubSpot form
-    // Replace PORTAL_ID and FORM_ID with your HubSpot form details
-    const PORTAL_ID = 'YOUR_PORTAL_ID';
-    const FORM_ID = 'YOUR_FORM_ID';
-
     try {
-      await fetch(`https://api.hsforms.com/submissions/v3/integration/submit/${PORTAL_ID}/${FORM_ID}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fields: [
-            { name: 'firstname', value: form.firstName },
-            { name: 'lastname', value: form.lastName },
-            { name: 'email', value: form.email },
-            { name: 'company', value: form.company },
-          ],
-          context: { pageUri: window.location.href, pageName: 'VenueGuessr' },
-        }),
+      // Get active competition
+      const res = await base44.functions.invoke('getActiveCompetition', {});
+      const competition = res.data?.competition;
+      // Save lead
+      const lead = await base44.entities.Lead.create({
+        competition_id: competition?.id || null,
+        first_name: form.firstName,
+        last_name: form.lastName,
+        email: form.email,
+        company: form.company,
+        score: score || 0,
+        consent: true,
+        mailjet_synced: false,
       });
+      // Async Mailjet sync — fire and forget
+      base44.functions.invoke('syncLeadToMailjet', { lead_id: lead.id }).catch(() => {});
     } catch (_) {
-      // Silent fail — proceed to leaderboard regardless
+      // Silent fail — proceed regardless
     }
-
     setSubmitting(false);
     onSubmit(form);
   };
