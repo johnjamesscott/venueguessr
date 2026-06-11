@@ -70,6 +70,18 @@ export const VENUES_BY_LEVEL = {
 // Default fallback (used by legacy code)
 export const VENUES = VENUES_BY_LEVEL[1];
 
+// Demo venue — used for the practice round only, never appears in live game
+export const DEMO_VENUE = {
+  id: 'demo',
+  venueName: 'Natural History Museum',
+  spaceName: 'Cromwell Road',
+  city: 'London',
+  country: 'GB',
+  lat: 51.4965109,
+  lng: -0.1760019,
+  tourUrl: 'https://my.matterport.com/show/?m=8sZPNjQPLGm',
+};
+
 // Clean embed params: auto-play, quickstart, hide clutter (dollhouse, branding, tags, reel, ruler, tour buttons)
 const EMBED_PARAMS = 'play=1&qs=1&dh=0&mls=2&gt=0&hr=0&measurements=0&mt=0&brand=0';
 

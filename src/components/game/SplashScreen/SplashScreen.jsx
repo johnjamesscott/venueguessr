@@ -123,10 +123,15 @@ const styles = {
   },
 };
 
-export default function SplashScreen({ onStart }) {
+export default function SplashScreen({ onStart, onDemo }) {
   const handleStart = (e) => {
     e.preventDefault();
     onStart(1);
+  };
+
+  const handleDemo = (e) => {
+    e.preventDefault();
+    onDemo();
   };
 
   return (
@@ -231,6 +236,32 @@ export default function SplashScreen({ onStart }) {
               ★ 1 Credit ★
             </span>
           </div>
+        </div>
+
+        {/* Demo button */}
+        <div style={{ position: 'relative', zIndex: 10, display: 'flex', justifyContent: 'center', padding: '4px 16px 8px', animation: 'slideUpIn 0.8s ease-out 0.5s both' }}>
+          <button
+            className="splash-btn"
+            style={{
+              background: 'transparent',
+              color: '#fff',
+              fontSize: 30,
+              fontWeight: 700,
+              fontFamily: 'Montserrat, sans-serif',
+              border: '2px solid rgba(255,255,255,0.5)',
+              borderRadius: 50,
+              padding: '16px 56px',
+              cursor: 'pointer',
+              letterSpacing: '0.5px',
+              WebkitTapHighlightColor: 'transparent',
+              touchAction: 'manipulation',
+              textTransform: 'uppercase',
+            }}
+            onClick={handleDemo}
+            onTouchEnd={handleDemo}
+          >
+            Play Demo
+          </button>
         </div>
 
         {/* Leaderboard */}

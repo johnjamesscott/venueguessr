@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { VENUES_BY_LEVEL, LEVELS, LONDON_VENUES, OUTSIDE_VENUES } from '@/data/venues';
+import { VENUES_BY_LEVEL, LEVELS, LONDON_VENUES, OUTSIDE_VENUES, DEMO_VENUE } from '@/data/venues';
 import { calculateDistance, shuffleArray } from '@/utils/distance';
 import { calculateScore } from '@/utils/scoring';
 import { base44 } from '@/api/base44Client';
@@ -49,8 +49,28 @@ export default function Game() {
   const [playerEmail, setPlayerEmail] = useState(null);
   const [venuePool, setVenuePool] = useState([]);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [isDemo, setIsDemo] = useState(false);
 
 
+
+  const startDemo = useCallback(() => {
+    unlockAudio();
+    setSelectedLevel(1);
+    setShuffledVenues([DEMO_VENUE]);
+    setVenuePool([]);
+    setCurrentRoundIndex(0);
+    setResults([]);
+    setCurrentGuess(null);
+    setGuessLocked(false);
+    setCurrentDistance(null);
+    setCurrentScore(0);
+    setTimerActive(false);
+    setPreRoundCountdown(true);
+    setShowCelebration(false);
+    setGameState(GAME_STATES.PLAYING);
+    // Mark as demo so results don't go to leaderboard
+    setIsDemo(true);
+  }, []);
 
   const startGame = useCallback((levelId = 1) => {
     unlockAudio();
@@ -86,6 +106,7 @@ export default function Game() {
     setPreRoundCountdown(true);
     setShowCelebration(false);
     setGameState(GAME_STATES.PLAYING);
+    setIsDemo(false);
   }, [OUTSIDE_VENUES, LONDON_VENUES]);
 
   const handleTourError = useCallback(() => {
@@ -151,7 +172,9 @@ export default function Game() {
       score: currentScore,
     }]);
     const isLastRound = currentRoundIndex >= shuffledVenues.length - 1;
-    if (isLastRound) {
+    if (isLastRound && isDemo) {
+      setGameState(GAME_STATES.SUMMARY);
+    } else if (isLastRound) {
       setGameState(GAME_STATES.CONTACT);
     } else {
       setCurrentRoundIndex(i => i + 1);
@@ -163,7 +186,7 @@ export default function Game() {
       setPreRoundCountdown(true);
       setGameState(GAME_STATES.PLAYING);
     }
-  }, [currentRoundIndex, shuffledVenues, currentGuess, currentDistance, currentScore]);
+  }, [currentRoundIndex, shuffledVenues, currentGuess, currentDistance, currentScore, isDemo]);
 
   const saveToLeaderboard = useCallback(async (formData, finalResults) => {
     const total = finalResults.reduce((sum, r) => sum + (r.score || 0), 0);
@@ -224,7 +247,7 @@ export default function Game() {
   const isLastRound = currentRoundIndex >= shuffledVenues.length - 1;
 
   if (gameState === GAME_STATES.SPLASH) {
-    return <SplashScreen onStart={startGame} />;
+    return <SplashScreen onStart={startGame} onDemo={startDemo} />;
   }
 
   if (gameState === GAME_STATES.SUMMARY) {
