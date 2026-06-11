@@ -76,23 +76,47 @@ export default function GuessMap({ onGuessPlaced, guessLocked, currentGuess, onL
         {markerPos && <Marker position={markerPos} icon={hbIcon} />}
       </MapContainer>
 
-      {/* Place your pin hint — full width */}
-      {!guessLocked && !markerPos && (
-        <div style={{ position: 'absolute', bottom: 90, left: 12, right: 12, zIndex: 1000, pointerEvents: 'none' }}>
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-            background: 'rgba(255,255,255,0.97)', color: '#333',
-            fontFamily: 'Montserrat, sans-serif', fontWeight: 700, fontSize: 18,
-            padding: '14px 20px', borderRadius: 50,
-            boxShadow: '0 4px 16px rgba(0,0,0,0.2)', border: '1px solid #e0e0e0',
-            width: '100%', boxSizing: 'border-box',
-          }}>
-            <svg width="16" height="21" viewBox="0 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M16 0C7.163 0 0 7.163 0 16c0 10 16 26 16 26s16-16 16-26C32 7.163 24.837 0 16 0z" fill="#AF231C"/>
-              <circle cx="16" cy="15" r="5.5" fill="white"/>
-            </svg>
-            Tap to place your pin
-          </div>
+      {/* Bottom bar: tap hint or lock-in button */}
+      {!guessLocked && (
+        <div style={{ position: 'absolute', bottom: 12, left: 12, right: 12, zIndex: 1000 }}>
+          {!markerPos ? (
+            /* Tap to place pin — info pill, not clickable */
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+              background: 'rgba(255,255,255,0.97)', color: '#333',
+              fontFamily: 'Montserrat, sans-serif', fontWeight: 700, fontSize: 18,
+              padding: '18px 20px', borderRadius: 50,
+              boxShadow: '0 4px 16px rgba(0,0,0,0.2)', border: '1px solid #e0e0e0',
+              pointerEvents: 'none',
+            }}>
+              <svg width="16" height="21" viewBox="0 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M16 0C7.163 0 0 7.163 0 16c0 10 16 26 16 26s16-16 16-26C32 7.163 24.837 0 16 0z" fill="#AF231C"/>
+                <circle cx="16" cy="15" r="5.5" fill="white"/>
+              </svg>
+              Tap map to place pin
+            </div>
+          ) : (
+            /* Lock in guess — red action button */
+            <button
+              onClick={onLockGuess}
+              style={{
+                width: '100%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                background: '#AF231C', color: '#fff',
+                fontFamily: 'Montserrat, sans-serif', fontWeight: 700, fontSize: 18,
+                padding: '18px 20px', borderRadius: 50, border: 'none',
+                boxShadow: '0 4px 0 rgba(0,0,0,0.3), 0 6px 16px rgba(175,35,28,0.4)',
+                cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.5px',
+                WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation',
+              }}
+            >
+              <svg width="16" height="21" viewBox="0 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M16 0C7.163 0 0 7.163 0 16c0 10 16 26 16 26s16-16 16-26C32 7.163 24.837 0 16 0z" fill="white"/>
+                <circle cx="16" cy="15" r="5.5" fill="#AF231C"/>
+              </svg>
+              Lock in your guess
+            </button>
+          )}
         </div>
       )}
     </div>
