@@ -15,6 +15,7 @@ import PrizeManager from './pages/admin/PrizeManager';
 import LeaderboardManager from './pages/admin/LeaderboardManager';
 import LeadManager from './pages/admin/LeadManager';
 import AnalyticsDashboard from './pages/admin/AnalyticsDashboard';
+import EmailPreview from './pages/admin/EmailPreview';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -47,6 +48,7 @@ const AuthenticatedApp = () => {
         <Route path="leaderboard" element={<LeaderboardManager />} />
         <Route path="leads" element={<LeadManager />} />
         <Route path="analytics" element={<AnalyticsDashboard />} />
+        <Route path="email-preview" element={<EmailPreview />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

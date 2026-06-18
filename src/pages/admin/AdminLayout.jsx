@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
-import { LayoutDashboard, Trophy, MapPin, Gift, Users, BarChart2, LogOut, Menu, X, Zap } from 'lucide-react';
+import { LayoutDashboard, Trophy, MapPin, Gift, Users, BarChart2, LogOut, Menu, X, Zap, Mail } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 
 const NAV = [
@@ -11,6 +11,7 @@ const NAV = [
   { path: '/admin/leaderboard', label: 'Leaderboard', icon: Trophy },
   { path: '/admin/leads', label: 'Leads', icon: Users },
   { path: '/admin/analytics', label: 'Analytics', icon: BarChart2 },
+  { path: '/admin/email-preview', label: 'Email Preview', icon: Mail },
 ];
 
 export default function AdminLayout() {
