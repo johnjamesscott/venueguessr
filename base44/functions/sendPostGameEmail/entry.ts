@@ -7,7 +7,7 @@ function buildEmailHtml({ first_name, total_score, round_results }) {
       <td style="padding:12px 20px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#cccccc;border-bottom:1px solid #333333;">
         Round ${i + 1} — ${r.venue_name || 'Unknown'}${r.city ? `, ${r.city}` : ''}
       </td>
-      <td style="padding:12px 20px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:700;color:#AF231C;text-align:right;border-bottom:1px solid #333333;">
+      <td style="padding:12px 20px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:700;color:#ffffff;text-align:right;border-bottom:1px solid #333333;">
         ${(r.score || 0).toLocaleString()} pts
       </td>
     </tr>
@@ -86,7 +86,7 @@ function buildEmailHtml({ first_name, total_score, round_results }) {
                   <p style="margin:0 0 4px;font-family:Arial,Helvetica,sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#888888;">
                     Your Total Score
                   </p>
-                  <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:52px;font-weight:900;color:#AF231C;line-height:1.1;">
+                  <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:52px;font-weight:900;color:#ffffff;line-height:1.1;">
                     ${(total_score || 0).toLocaleString()}
                   </p>
                   <p style="margin:4px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#555555;">
