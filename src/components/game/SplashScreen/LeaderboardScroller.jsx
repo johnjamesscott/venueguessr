@@ -10,23 +10,26 @@ async function fetchLeaderboard() {
   const res = await base44.functions.invoke('getActiveCompetition', {});
   const competition = res?.data?.competition || null;
 
-  if (!competition) return { entries: [], competition: null };
+  if (!competition) return { entries: [], competition: null, prizes: [] };
 
-  // Fetch entries for this competition only
-  const entries = await base44.entities.LeaderboardEntry.filter(
-    { competition_id: competition.id },
-    '-total_score',
-    20
-  );
+  // Fetch entries and prizes for this competition in parallel
+  const [entries, prizes] = await Promise.all([
+    base44.entities.LeaderboardEntry.filter(
+      { competition_id: competition.id },
+      '-total_score',
+      20
+    ),
+    base44.entities.Prize.filter({ competition_id: competition.id, active: true }),
+  ]);
 
-  return { entries, competition };
+  return { entries, competition, prizes };
 }
 
 export default function LeaderboardScroller() {
   const [page, setPage] = useState(0);
   const timerRef = useRef(null);
 
-  const { data = { entries: [], competition: null }, isLoading } = useQuery({
+  const { data = { entries: [], competition: null, prizes: [] }, isLoading } = useQuery({
     queryKey: ['leaderboard-splash'],
     queryFn: fetchLeaderboard,
     staleTime: 30_000,
@@ -34,7 +37,11 @@ export default function LeaderboardScroller() {
     retry: 2,
   });
 
-  const { entries, competition } = data;
+  const { entries, competition, prizes } = data;
+  const prizeByPosition = (prizes || []).reduce((acc, p) => {
+    acc[p.position] = p.prize_name;
+    return acc;
+  }, {});
   const totalPages = Math.max(1, Math.ceil(entries.length / PAGE_SIZE));
 
   useEffect(() => {
@@ -115,8 +122,8 @@ export default function LeaderboardScroller() {
                 <p style={{ fontSize: 24, fontWeight: 700, color: '#fff', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {(entry.player_name || '').split(' ')[0]}
                 </p>
-                <p style={{ fontSize: 20, fontWeight: 500, color: 'rgba(255,255,255,0.5)', margin: 0 }}>
-                  {entry.rounds_played ?? 0} rounds played
+                <p style={{ fontSize: 20, fontWeight: 500, color: 'rgba(255,255,255,0.5)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {prizeByPosition[globalRank] || '—'}
                 </p>
               </div>
 
