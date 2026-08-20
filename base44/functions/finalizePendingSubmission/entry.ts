@@ -45,6 +45,13 @@ Deno.serve(async (req) => {
     const position = scoreRes?.data?.position || 0;
     const competition = scoreRes?.data?.competition || null;
 
+    // NOTE: internal functions.invoke does not forward the icp_boosted flag reliably,
+    // so set it directly on the freshly created leaderboard entry.
+    const entryId = scoreRes?.data?.entry?.id;
+    if (entryId && sub.icp_boosted === true) {
+      await base44.asServiceRole.entities.LeaderboardEntry.update(entryId, { icp_boosted: true });
+    }
+
     // 3. Fire Mailjet sync + post-game email after the response (best-effort)
     waitUntil(base44.asServiceRole.functions.invoke('syncLeadToMailjet', { lead_id: lead.id }));
     waitUntil(base44.asServiceRole.functions.invoke('sendPostGameEmail', {
