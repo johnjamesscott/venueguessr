@@ -4,7 +4,7 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-    const { player_name, email, total_score, rounds_played, avg_distance_km } = body;
+    const { player_name, email, total_score, rounds_played, avg_distance_km, icp_boosted } = body;
 
     // Get active competition
     const competitions = await base44.asServiceRole.entities.Competition.filter({ active: true });
@@ -17,6 +17,7 @@ Deno.serve(async (req) => {
       rounds_played: rounds_played || 0,
       avg_distance_km: avg_distance_km || 0,
       competition_id: competition?.id || null,
+      icp_boosted: icp_boosted === true,
     });
 
     // Calculate position

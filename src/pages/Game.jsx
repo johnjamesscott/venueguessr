@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { getEmbedUrl } from '@/data/venues';
 import { calculateDistance } from '@/utils/distance';
-import { calculateScore } from '@/utils/scoring';
+import { calculateScore, ICP_BOOST_FACTOR } from '@/utils/scoring';
 import { base44 } from '@/api/base44Client';
 import {
   unlockAudio, playPinSound, playLockSound,
@@ -62,7 +62,18 @@ export default function Game() {
   const [activeCompetition, setActiveCompetition] = useState(null);
   const [prizes, setPrizes] = useState([]);
   const [venuePool, setVenuePool] = useState([]);
+  const [icpBoostArmed, setIcpBoostArmed] = useState(() => {
+    try { return localStorage.getItem('vg_icp_boost') === '1'; } catch { return false; }
+  });
   const scoreSubmittedRef = useRef(false);
+
+  const toggleIcpBoost = useCallback(() => {
+    setIcpBoostArmed(prev => {
+      const next = !prev;
+      try { localStorage.setItem('vg_icp_boost', next ? '1' : '0'); } catch {}
+      return next;
+    });
+  }, []);
 
   // Load active competition + prizes on mount
   useEffect(() => {
@@ -210,7 +221,8 @@ export default function Game() {
 
     // results already contains all rounds (added in handleNextRound for the last round too)
     const finalResults = results;
-    const total = finalResults.reduce((sum, r) => sum + (r.score || 0), 0);
+    const baseTotal = finalResults.reduce((sum, r) => sum + (r.score || 0), 0);
+    const total = icpBoostArmed ? Math.round(baseTotal * ICP_BOOST_FACTOR) : baseTotal;
     const withDist = finalResults.filter(r => r.distance);
     const avgKm = withDist.length > 0
       ? withDist.reduce((sum, r) => sum + (r.distance?.km || 0), 0) / withDist.length : 0;
@@ -222,6 +234,7 @@ export default function Game() {
         total_score: total,
         rounds_played: finalResults.length,
         avg_distance_km: Math.round(avgKm),
+        icp_boosted: icpBoostArmed,
       });
       if (formData.email) setPlayerEmail(formData.email);
     } catch (_) {}
@@ -243,7 +256,7 @@ export default function Game() {
     }
 
     setGameState(GAME_STATES.SUMMARY);
-  }, [results, shuffledVenues, currentRoundIndex, currentGuess, currentDistance, currentScore]);
+  }, [results, shuffledVenues, currentRoundIndex, currentGuess, currentDistance, currentScore, icpBoostArmed]);
 
   const handleContactSkip = useCallback(() => {
     setGameState(GAME_STATES.SUMMARY);
@@ -275,11 +288,12 @@ export default function Game() {
   const isLastRound = currentRoundIndex >= shuffledVenues.length - 1;
 
   if (gameState === GAME_STATES.SPLASH) {
-    return <SplashScreen onStart={startGame} onDemo={startDemo} prizes={prizes} />;
+    return <SplashScreen onStart={startGame} onDemo={startDemo} prizes={prizes} icpBoostArmed={icpBoostArmed} onToggleIcpBoost={toggleIcpBoost} />;
   }
 
   if (gameState === GAME_STATES.SUMMARY) {
-    const totalScore = results.reduce((sum, r) => sum + (r.score || 0), 0);
+    const baseTotal = results.reduce((sum, r) => sum + (r.score || 0), 0);
+    const totalScore = icpBoostArmed ? Math.round(baseTotal * ICP_BOOST_FACTOR) : baseTotal;
     return (
       <GameSummary
         results={results}
@@ -294,7 +308,8 @@ export default function Game() {
   }
 
   if (gameState === GAME_STATES.CONTACT) {
-    const totalScore = results.reduce((sum, r) => sum + (r.score || 0), 0);
+    const baseTotal = results.reduce((sum, r) => sum + (r.score || 0), 0);
+    const totalScore = icpBoostArmed ? Math.round(baseTotal * ICP_BOOST_FACTOR) : baseTotal;
     const withDist = results.filter(r => r.distance);
     const avgKm = withDist.length > 0
       ? withDist.reduce((s, r) => s + (r.distance?.km || 0), 0) / withDist.length : 0;
@@ -311,6 +326,7 @@ export default function Game() {
             distance_km: r.distance?.km || 0,
           }))}
           avgDistanceKm={Math.round(avgKm)}
+          icpBoosted={icpBoostArmed}
           onManualSubmit={handleContactSubmit}
           onSkip={handleContactSkip}
         />

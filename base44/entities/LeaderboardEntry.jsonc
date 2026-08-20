@@ -24,6 +24,11 @@
     "avg_distance_km": {
       "type": "number",
       "description": "Average distance in km"
+    },
+    "icp_boosted": {
+      "type": "boolean",
+      "default": false,
+      "description": "True if the total_score was boosted via the ICP boost"
     }
   },
   "required": [

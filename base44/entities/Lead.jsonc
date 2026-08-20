@@ -27,6 +27,11 @@
     "mailjet_synced": {
       "type": "boolean",
       "default": false
+    },
+    "icp_boosted": {
+      "type": "boolean",
+      "default": false,
+      "description": "True if this lead received the ICP score boost"
     }
   },
   "required": [

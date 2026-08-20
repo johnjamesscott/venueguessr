@@ -30,6 +30,7 @@ Deno.serve(async (req) => {
       score: sub.total_score || 0,
       consent: true,
       mailjet_synced: false,
+      icp_boosted: sub.icp_boosted === true,
     });
 
     // 2. Create the LeaderboardEntry + compute rank (reuse submitScore)
@@ -39,6 +40,7 @@ Deno.serve(async (req) => {
       total_score: sub.total_score || 0,
       rounds_played: (sub.round_results || []).length,
       avg_distance_km: sub.avg_distance_km || 0,
+      icp_boosted: sub.icp_boosted === true,
     });
     const position = scoreRes?.data?.position || 0;
     const competition = scoreRes?.data?.competition || null;

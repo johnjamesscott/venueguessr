@@ -43,6 +43,11 @@
         "expired"
       ],
       "default": "pending"
+    },
+    "icp_boosted": {
+      "type": "boolean",
+      "default": false,
+      "description": "True if the stored total_score was ICP-boosted on the kiosk"
     }
   },
   "required": [

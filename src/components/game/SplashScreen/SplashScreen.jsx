@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import SplineGlobe from './SplineGlobe';
 import LeaderboardScroller from './LeaderboardScroller';
 
@@ -123,7 +123,24 @@ const styles = {
   },
 };
 
-export default function SplashScreen({ onStart, onDemo }) {
+export default function SplashScreen({ onStart, onDemo, icpBoostArmed, onToggleIcpBoost }) {
+  const tapCountRef = useRef(0);
+  const tapTimerRef = useRef(null);
+  const [flash, setFlash] = useState(false);
+
+  // Hidden trigger: 5 quick taps on the HeadBox logo toggles the ICP boost.
+  const handleLogoTap = () => {
+    tapCountRef.current += 1;
+    if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
+    tapTimerRef.current = setTimeout(() => { tapCountRef.current = 0; }, 1500);
+    if (tapCountRef.current >= 5) {
+      tapCountRef.current = 0;
+      onToggleIcpBoost?.();
+      setFlash(true);
+      setTimeout(() => setFlash(false), 1500);
+    }
+  };
+
   const handleStart = (e) => {
     e.preventDefault();
     onStart(1);
@@ -180,14 +197,26 @@ export default function SplashScreen({ onStart, onDemo }) {
 
         {/* Header — centred HeadBox logo */}
         <div style={styles.header}>
-          <a href="https://www.headbox.com" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center' }}>
+          <div onClick={handleLogoTap} style={{ display: 'flex', alignItems: 'center', cursor: 'default', userSelect: 'none', WebkitTapHighlightColor: 'transparent' }}>
             <img
               src="https://cdn.prod.website-files.com/63bd498079b1380a81c6e13b/63bd498079b1384ca2c6e19d_HeadBox-Logo-Brick-header.png"
               alt="HeadBox"
-              style={{ height: 256, objectFit: 'contain', filter: 'brightness(0) invert(1)', opacity: 0.95 }}
+              style={{ height: 256, objectFit: 'contain', filter: 'brightness(0) invert(1)', opacity: 0.95, pointerEvents: 'none' }}
             />
-          </a>
+          </div>
         </div>
+
+        {/* Discreet ICP indicator — only the team sees this */}
+        {icpBoostArmed && (
+          <div style={{ position: 'fixed', top: 16, right: 20, zIndex: 50, pointerEvents: 'none' }}>
+            <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: '#AF231C', boxShadow: '0 0 6px #AF231C' }} />
+          </div>
+        )}
+        {flash && (
+          <div style={{ position: 'fixed', top: 24, left: '50%', transform: 'translateX(-50%)', background: 'rgba(20,20,20,0.92)', color: '#fff', fontSize: 14, fontWeight: 700, padding: '8px 18px', borderRadius: 8, zIndex: 100, letterSpacing: '0.5px', pointerEvents: 'none' }}>
+            ICP boost {icpBoostArmed ? 'armed' : 'disarmed'}
+          </div>
+        )}
 
         {/* Globe — absolute behind everything */}
         <div style={{

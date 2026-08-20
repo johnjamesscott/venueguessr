@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 
-export default function ContactForm({ onSubmit, onSkip, competitionId, totalScore }) {
+export default function ContactForm({ onSubmit, onSkip, competitionId, totalScore, icpBoosted }) {
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', company: '' });
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
@@ -34,6 +34,7 @@ export default function ContactForm({ onSubmit, onSkip, competitionId, totalScor
         score: totalScore || 0,
         consent: true,
         mailjet_synced: false,
+        icp_boosted: icpBoosted === true,
       });
 
       // Fire-and-forget Mailjet sync

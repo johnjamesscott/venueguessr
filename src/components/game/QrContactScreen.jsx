@@ -8,6 +8,7 @@ export default function QrContactScreen({
   competitionId,
   roundResults,
   avgDistanceKm,
+  icpBoosted,
   onManualSubmit,
   onSkip,
 }) {
@@ -30,6 +31,7 @@ export default function QrContactScreen({
           round_results: roundResults || [],
           avg_distance_km: avgDistanceKm || 0,
           status: 'pending',
+          icp_boosted: icpBoosted === true,
         });
         if (!cancelled) { setPending(rec); setCreating(false); }
       } catch (e) {
@@ -65,6 +67,7 @@ export default function QrContactScreen({
         onSkip={onSkip}
         competitionId={competitionId}
         totalScore={totalScore}
+        icpBoosted={icpBoosted}
       />
     );
   }
