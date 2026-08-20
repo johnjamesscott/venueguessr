@@ -122,7 +122,7 @@ export default function QrContactScreen({
           </button>
           <button
             onClick={onSkip}
-            className="text-hb-text-muted/60 hover:text-hb-text-muted text-xs font-medium transition-colors"
+            className="mt-1 px-5 py-2.5 rounded-full border border-hb-border bg-hb-surface text-hb-text-muted hover:text-white hover:border-hb-text-muted text-sm font-semibold transition-colors"
           >
             Skip & view results
           </button>
