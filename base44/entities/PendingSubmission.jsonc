@@ -1,0 +1,69 @@
+{
+  "name": "PendingSubmission",
+  "type": "object",
+  "properties": {
+    "token": {
+      "type": "string",
+      "description": "Unique random token encoded in the QR code URL"
+    },
+    "competition_id": {
+      "type": "string"
+    },
+    "total_score": {
+      "type": "number"
+    },
+    "round_results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "venue_name": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "score": {
+            "type": "number"
+          },
+          "distance_km": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "avg_distance_km": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "completed",
+        "expired"
+      ],
+      "default": "pending"
+    }
+  },
+  "required": [
+    "token"
+  ],
+  "rls": {
+    "read": {},
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

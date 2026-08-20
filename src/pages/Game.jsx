@@ -14,7 +14,7 @@ import MatterportViewer from '@/components/game/MatterportViewer';
 import GuessMap from '@/components/game/GuessMap';
 import ArcadeMapControls from '@/components/game/ArcadeMapControls';
 import RoundResult from '@/components/game/RoundResult';
-import ContactForm from '@/components/game/ContactForm';
+import QrContactScreen from '@/components/game/QrContactScreen';
 import GameSummary from '@/components/game/GameSummary';
 import PreRoundCountdown from '@/components/game/PreRoundCountdown';
 import CelebrationOverlay from '@/components/game/CelebrationOverlay';
@@ -294,14 +294,25 @@ export default function Game() {
   }
 
   if (gameState === GAME_STATES.CONTACT) {
+    const totalScore = results.reduce((sum, r) => sum + (r.score || 0), 0);
+    const withDist = results.filter(r => r.distance);
+    const avgKm = withDist.length > 0
+      ? withDist.reduce((s, r) => s + (r.distance?.km || 0), 0) / withDist.length : 0;
     return (
       <div className="min-h-screen bg-hb-bg">
         <GameHeader />
-        <ContactForm
-          onSubmit={handleContactSubmit}
-          onSkip={handleContactSkip}
+        <QrContactScreen
+          totalScore={totalScore}
           competitionId={activeCompetition?.id}
-          totalScore={results.reduce((sum, r) => sum + (r.score || 0), 0) + currentScore}
+          roundResults={results.map(r => ({
+            venue_name: r.venueName,
+            city: r.city,
+            score: r.score,
+            distance_km: r.distance?.km || 0,
+          }))}
+          avgDistanceKm={Math.round(avgKm)}
+          onManualSubmit={handleContactSubmit}
+          onSkip={handleContactSkip}
         />
       </div>
     );
