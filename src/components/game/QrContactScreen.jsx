@@ -23,17 +23,16 @@ export default function QrContactScreen({
     let cancelled = false;
     (async () => {
       try {
-        const token = crypto.randomUUID();
-        const rec = await base44.entities.PendingSubmission.create({
-          token,
+        const res = await base44.functions.invoke('createPendingSubmission', {
           competition_id: competitionId || null,
           total_score: totalScore || 0,
           round_results: roundResults || [],
           avg_distance_km: avgDistanceKm || 0,
-          status: 'pending',
           icp_boosted: icpBoosted === true,
         });
-        if (!cancelled) { setPending(rec); setCreating(false); }
+        const data = res?.data;
+        if (!cancelled && data?.token) { setPending({ id: data.id, token: data.token }); setCreating(false); }
+        else if (!cancelled) { setError('Could not generate QR code'); setCreating(false); }
       } catch (e) {
         if (!cancelled) { setError('Could not generate QR code'); setCreating(false); }
       }
