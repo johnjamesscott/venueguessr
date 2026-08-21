@@ -3,6 +3,15 @@ import { base44 } from '@/api/base44Client';
 import { Smartphone, Pencil } from 'lucide-react';
 import ContactForm from './ContactForm';
 
+const getSubmissionErrorMessage = (requestError) => {
+  const status = requestError?.response?.status || requestError?.status;
+  if (status === 429 || String(requestError?.message || '').includes('429')) {
+    return 'Too many attempts from this kiosk. Wait one minute, then retry.';
+  }
+  if (!navigator.onLine) return 'This kiosk is offline. Reconnect, then retry.';
+  return 'Could not generate the QR code.';
+};
+
 export default function QrContactScreen({
   totalScore,
   competitionId,
@@ -52,14 +61,26 @@ export default function QrContactScreen({
       .then(() => {
         if (!cancelled) setCreating(false);
       })
-      .catch(() => {
+      .catch((requestError) => {
         if (!cancelled) {
-          setError('Could not generate QR code');
+          setError(getSubmissionErrorMessage(requestError));
           setCreating(false);
         }
       });
     return () => { cancelled = true; };
   }, [createPendingSubmission]);
+
+  const retryPendingSubmission = useCallback(() => {
+    if (creating) return;
+    setCreating(true);
+    setError(null);
+    createPendingSubmission()
+      .then(() => setCreating(false))
+      .catch((requestError) => {
+        setError(getSubmissionErrorMessage(requestError));
+        setCreating(false);
+      });
+  }, [createPendingSubmission, creating]);
 
   // Poll the token-specific public function. PendingSubmission records themselves
   // remain private, so the kiosk never subscribes to other players' submissions.
@@ -145,8 +166,8 @@ export default function QrContactScreen({
           ) : error ? (
             <div className="w-72 h-72 rounded-hb-xl bg-hb-surface border border-red-500/40 flex flex-col items-center justify-center px-6">
               <p className="text-red-400 text-sm text-center mb-3">{error}</p>
-              <button onClick={() => setMode('manual')} className="text-hb-red text-sm font-semibold underline">
-                Enter details instead
+              <button onClick={retryPendingSubmission} className="rounded-full bg-hb-red px-5 py-2 text-sm font-bold text-white">
+                Retry QR code
               </button>
             </div>
           ) : (

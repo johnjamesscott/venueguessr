@@ -1,6 +1,9 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.43';
 import { waitUntil } from 'base44:runtime';
 
+const SUBMISSION_TTL_MS = 24 * 60 * 60 * 1_000;
+const MAX_ROUNDS = 5;
+
 const PERSONAL_EMAIL_PROVIDERS = new Set([
   'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com',
   'me.com', 'mac.com', 'live.com', 'msn.com', 'aol.com', 'protonmail.com',
@@ -51,6 +54,15 @@ Deno.serve(async (req) => {
     if (submission.status === 'completed') {
       return Response.json({ error: 'Score already submitted' }, { status: 409 });
     }
+    const createdAt = Date.parse(submission.created_date || '');
+    const expiresAt = Date.parse(submission.expires_at || '');
+    const hasExpired = Number.isFinite(expiresAt)
+      ? Date.now() >= expiresAt
+      : Number.isFinite(createdAt) && Date.now() - createdAt > SUBMISSION_TTL_MS;
+    if (submission.status === 'expired' || hasExpired) {
+      await base44.asServiceRole.entities.PendingSubmission.update(submission.id, { status: 'expired' });
+      return Response.json({ error: 'This score submission has expired' }, { status: 410 });
+    }
 
     // Persist each linked record ID as it is created. A retry resumes this
     // submission instead of creating duplicate leads or leaderboard entries.
@@ -84,7 +96,7 @@ Deno.serve(async (req) => {
         player_name: `${firstName} ${lastName}`,
         email,
         total_score: Number(submission.total_score) || 0,
-        rounds_played: Math.min((submission.round_results || []).length, 3),
+        rounds_played: Math.min((submission.round_results || []).length, MAX_ROUNDS),
         avg_distance_km: Number(submission.avg_distance_km) || 0,
         competition_id: submission.competition_id || null,
         icp_boosted: submission.icp_boosted === true,
@@ -109,6 +121,8 @@ Deno.serve(async (req) => {
       status: 'completed',
       lead_id: lead.id,
       leaderboard_entry_id: entry.id,
+      // The one-way kiosk fingerprint is needed only for anonymous burst control.
+      request_fingerprint: '',
     });
 
     // Provider calls run after the durable lead, score and completion state exist.

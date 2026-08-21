@@ -8,9 +8,12 @@ const MAX_BASE_SCORE = 5000;
 // Adjust this single constant to control the boost strength.
 export const ICP_BOOST_FACTOR = 1.25;
 
-export function applyIcpBoost(score, enabled = false) {
+export function applyIcpBoost(score, enabled = false, multiplier = ICP_BOOST_FACTOR) {
   const safeScore = Number.isFinite(score) ? Math.max(0, score) : 0;
-  return enabled ? Math.round(safeScore * ICP_BOOST_FACTOR) : safeScore;
+  const safeMultiplier = Number.isFinite(multiplier)
+    ? Math.min(2, Math.max(1, multiplier))
+    : ICP_BOOST_FACTOR;
+  return enabled ? Math.round(safeScore * safeMultiplier) : safeScore;
 }
 
 /**

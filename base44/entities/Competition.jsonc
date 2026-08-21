@@ -28,9 +28,43 @@
     },
     "description": {
       "type": "string"
+    },
+    "icp_multiplier": {
+      "type": "number",
+      "default": 1.25,
+      "minimum": 1,
+      "maximum": 2,
+      "description": "Multiplier applied to each ICP round score"
+    },
+    "round_count": {
+      "type": "integer",
+      "default": 3,
+      "minimum": 1,
+      "maximum": 5,
+      "description": "Number of venues played in a full game"
+    },
+    "round_seconds": {
+      "type": "integer",
+      "default": 30,
+      "minimum": 15,
+      "maximum": 90,
+      "description": "Time allowed for each round"
+    },
+    "kiosk_idle_seconds": {
+      "type": "integer",
+      "default": 90,
+      "minimum": 30,
+      "maximum": 300,
+      "description": "Seconds without interaction before the kiosk resets"
     }
   },
   "required": [
     "name"
-  ]
+  ],
+  "rls": {
+    "read": { "user_condition": { "role": "admin" } },
+    "create": { "user_condition": { "role": "admin" } },
+    "update": { "user_condition": { "role": "admin" } },
+    "delete": { "user_condition": { "role": "admin" } }
+  }
 }

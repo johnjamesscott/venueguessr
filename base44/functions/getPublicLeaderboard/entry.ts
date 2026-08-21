@@ -2,6 +2,21 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.43';
 
 const MAX_PUBLIC_ENTRIES = 20;
 
+const clamp = (value, fallback, min, max, integer = false) => {
+  if (value == null || value === '') return fallback;
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  const normalized = integer ? Math.round(number) : number;
+  return Math.min(max, Math.max(min, normalized));
+};
+
+const publicSettings = (competition) => ({
+  icpMultiplier: clamp(competition?.icp_multiplier, 1.25, 1, 2),
+  roundCount: clamp(competition?.round_count, 3, 1, 5, true),
+  roundSeconds: clamp(competition?.round_seconds, 30, 15, 90, true),
+  kioskIdleSeconds: clamp(competition?.kiosk_idle_seconds, 90, 30, 300, true),
+});
+
 const toPublicName = (value) => {
   const parts = typeof value === 'string' ? value.trim().split(/\s+/).filter(Boolean) : [];
   if (parts.length === 0) return 'Anonymous';
@@ -37,13 +52,14 @@ Deno.serve(async (req) => {
         active: true,
       }),
     ]);
+    const settings = publicSettings(competition);
 
     const publicEntries = entries.map((entry, index) => ({
       id: entry.id,
       position: index + 1,
       player_name: toPublicName(entry.player_name),
       total_score: Number(entry.total_score) || 0,
-      rounds_played: Math.min(Number(entry.rounds_played) || 0, 3),
+      rounds_played: Math.min(Number(entry.rounds_played) || 0, settings.roundCount),
     }));
 
     const publicPrizes = prizes
@@ -57,6 +73,7 @@ Deno.serve(async (req) => {
       competition: {
         id: competition.id,
         name: competition.name || '',
+        settings,
       },
       entries: publicEntries,
       prizes: publicPrizes,

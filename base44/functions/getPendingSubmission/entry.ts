@@ -19,7 +19,11 @@ Deno.serve(async (req) => {
     }
 
     const createdAt = Date.parse(sub.created_date || '');
-    if (sub.status === 'pending' && Number.isFinite(createdAt) && Date.now() - createdAt > SUBMISSION_TTL_MS) {
+    const expiresAt = Date.parse(sub.expires_at || '');
+    const hasExpired = Number.isFinite(expiresAt)
+      ? Date.now() >= expiresAt
+      : Number.isFinite(createdAt) && Date.now() - createdAt > SUBMISSION_TTL_MS;
+    if (sub.status === 'expired' || (sub.status === 'pending' && hasExpired)) {
       await base44.asServiceRole.entities.PendingSubmission.update(sub.id, { status: 'expired' });
       return Response.json({ error: 'This score submission has expired' }, { status: 410 });
     }
