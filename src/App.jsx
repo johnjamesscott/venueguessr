@@ -20,6 +20,7 @@ const LeaderboardManager = lazy(() => import('./pages/admin/LeaderboardManager')
 const LeadManager = lazy(() => import('./pages/admin/LeadManager'));
 const AnalyticsDashboard = lazy(() => import('./pages/admin/AnalyticsDashboard'));
 const EmailPreview = lazy(() => import('./pages/admin/EmailPreview'));
+const KioskCheck = lazy(() => import('./pages/KioskCheck'));
 
 const AppLoading = () => (
   <div className="fixed inset-0 flex items-center justify-center bg-[#121212]">
@@ -51,7 +52,7 @@ const AdminAccessRequired = ({ authenticated = false }) => {
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
   const location = useLocation();
-  const isPublicRoute = location.pathname.startsWith('/submit');
+  const isPublicRoute = location.pathname.startsWith('/submit') || location.pathname === '/kiosk-check';
 
   useEffect(() => {
     if (!isPublicRoute && authError?.type === 'auth_required') {
@@ -77,6 +78,7 @@ const AuthenticatedApp = () => {
     <Suspense fallback={<AppLoading />}>
       <Routes>
         <Route path="/submit" element={<Submit />} />
+        <Route path="/kiosk-check" element={<KioskCheck />} />
         <Route path="/" element={<Game />} />
         <Route
           element={(

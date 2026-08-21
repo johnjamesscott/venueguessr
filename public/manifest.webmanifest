@@ -3,7 +3,10 @@
   "short_name": "VenueGuessr",
   "description": "Explore 3D venue tours and guess where each venue is located.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "portrait-primary",
   "background_color": "#121212",
   "theme_color": "#121212",
   "icons": [

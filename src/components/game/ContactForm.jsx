@@ -57,7 +57,7 @@ export default function ContactForm({ onSubmit, onSkip }) {
         overscrollBehavior: 'contain',
       }}
     >
-      <div className="w-full max-w-md bg-hb-surface rounded-hb-lg border border-hb-border p-6 md:p-8 fade-in">
+      <div className="kiosk-contact-form w-full max-w-md bg-hb-surface rounded-hb-lg border border-hb-border p-6 md:p-8 fade-in">
         <div className="flex items-start justify-between mb-6">
           <div>
             <h2 className="text-white font-black text-2xl leading-tight">Well played!</h2>
@@ -109,7 +109,7 @@ export default function ContactForm({ onSubmit, onSkip }) {
           </div>
 
           <button type="submit" disabled={submitting}
-            className="w-full bg-hb-red hover:bg-hb-red-dark disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold uppercase tracking-widest text-sm py-3.5 rounded-hb-xl transition-colors duration-200 mt-2">
+            className="kiosk-primary-action w-full bg-hb-red hover:bg-hb-red-dark disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold uppercase tracking-widest text-sm py-3.5 rounded-hb-xl transition-colors duration-200 mt-2">
             {submitting ? 'Submitting...' : 'See My Results'}
           </button>
         </form>

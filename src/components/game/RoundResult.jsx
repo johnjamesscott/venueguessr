@@ -54,13 +54,13 @@ export default function RoundResult({ roundNumber, venue, guess, distance, score
   const rating = getRating(score);
 
   return (
-    <div className="fade-in flex flex-col gap-3">
+    <div className="kiosk-round-result fade-in mx-auto flex w-full max-w-4xl flex-col gap-3">
       {/* Full-width map */}
-      <div className="w-full rounded-hb-lg overflow-hidden border border-hb-border" style={{ height: '280px' }}>
+      <div className="kiosk-round-result-map w-full rounded-hb-lg overflow-hidden border border-hb-border">
         <MapContainer
           center={actualPos}
           zoom={4}
-          style={{ width: '100%', height: '280px' }}
+          style={{ width: '100%', height: '100%' }}
           zoomControl={true}
           attributionControl={false}
         >
@@ -82,22 +82,22 @@ export default function RoundResult({ roundNumber, venue, guess, distance, score
       </div>
 
       {/* Score + info card */}
-      <div className="bg-hb-surface rounded-hb-lg border border-hb-border p-5">
+      <div className="kiosk-result-card bg-hb-surface rounded-hb-lg border border-hb-border p-5">
         <div className="flex items-start justify-between gap-4">
           {/* Left: distance & venue */}
           <div className="flex-1 min-w-0">
-            <p className="text-hb-red font-bold text-xs uppercase tracking-widest mb-1">Round {roundNumber}</p>
+            <p className="kiosk-result-eyebrow text-hb-red font-bold text-xs uppercase tracking-widest mb-1">Round {roundNumber}</p>
             {guess ? (
               <>
-                <p className="text-white font-black text-2xl leading-tight">
+                <p className="kiosk-result-distance text-white font-black text-2xl leading-tight">
                   {distance.miles} <span className="text-white/50 font-bold text-lg">miles</span>
                 </p>
-                <p className="text-white/40 font-medium text-sm">{distance.km} km away</p>
+                <p className="kiosk-result-copy text-white/40 font-medium text-sm">{distance.km} km away</p>
               </>
             ) : (
               <p className="text-white font-black text-xl">TIME'S UP</p>
             )}
-            <p className="text-hb-text-muted text-xs mt-2 truncate">
+            <p className="kiosk-result-copy text-hb-text-muted text-xs mt-2 truncate">
               <span className="text-white/70 font-medium">{venue.venueName}</span>
               {' — '}{venue.city}, {venue.country}
             </p>
@@ -106,14 +106,14 @@ export default function RoundResult({ roundNumber, venue, guess, distance, score
           {/* Right: score */}
           <div className="text-right shrink-0">
             <div
-              className="text-4xl font-black leading-tight"
+              className="kiosk-result-score text-4xl font-black leading-tight"
               style={{ color: rating.color }}
             >
               <AnimatedScore target={score} />
             </div>
-            <div className="text-hb-text-muted text-xs font-bold uppercase tracking-wider">points</div>
+            <div className="kiosk-result-eyebrow text-hb-text-muted text-xs font-bold uppercase tracking-wider">points</div>
             <div
-              className="text-xs font-bold uppercase tracking-wider mt-1"
+              className="kiosk-result-eyebrow text-xs font-bold uppercase tracking-wider mt-1"
               style={{ color: rating.color }}
             >
               {rating.label}
@@ -124,7 +124,7 @@ export default function RoundResult({ roundNumber, venue, guess, distance, score
 
       {/* Legend */}
       {guessPos && (
-        <div className="flex items-center gap-4 text-xs text-hb-text-muted px-1">
+        <div className="kiosk-result-legend flex items-center gap-4 text-xs text-hb-text-muted px-1">
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded-full bg-slate-400" />
             Your guess
@@ -142,7 +142,7 @@ export default function RoundResult({ roundNumber, venue, guess, distance, score
 
       <button
         onClick={onNext}
-        className="w-full bg-hb-red hover:bg-hb-red-dark text-white font-bold uppercase tracking-widest text-sm py-3.5 rounded-hb-xl transition-colors duration-200"
+        className="kiosk-primary-action w-full bg-hb-red hover:bg-hb-red-dark text-white font-bold uppercase tracking-widest text-sm py-3.5 rounded-hb-xl transition-colors duration-200"
       >
         {isLastRound ? 'See Results' : 'Next Round'}
       </button>

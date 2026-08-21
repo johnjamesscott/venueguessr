@@ -166,8 +166,8 @@ export default function QrContactScreen({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-hb-bg px-6 py-8 overflow-y-auto">
-      <div className="w-full max-w-md text-center fade-in flex flex-col items-center">
+    <div className="kiosk-contact-screen fixed inset-0 z-50 flex flex-col items-center justify-center bg-hb-bg px-6 py-8 overflow-y-auto">
+      <div className="kiosk-contact-panel w-full max-w-md text-center fade-in flex flex-col items-center">
         {/* Score chip */}
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-hb-red/15 border border-hb-red/40 mb-5">
           <span className="text-hb-red font-black text-lg">{(totalScore || 0).toLocaleString()}</span>
@@ -182,18 +182,18 @@ export default function QrContactScreen({
         {/* QR code */}
         <div className="relative">
           {creating ? (
-            <div className="w-72 h-72 rounded-hb-xl bg-hb-surface border border-hb-border flex items-center justify-center">
+            <div className="kiosk-qr-code w-72 h-72 rounded-hb-xl bg-hb-surface border border-hb-border flex items-center justify-center">
               <div className="w-8 h-8 border-4 border-hb-border border-t-hb-red rounded-full animate-spin" />
             </div>
           ) : error ? (
-            <div className="w-72 h-72 rounded-hb-xl bg-hb-surface border border-red-500/40 flex flex-col items-center justify-center px-6">
+            <div className="kiosk-qr-code w-72 h-72 rounded-hb-xl bg-hb-surface border border-red-500/40 flex flex-col items-center justify-center px-6">
               <p className="text-red-400 text-sm text-center mb-3">{error}</p>
               <button onClick={retryPendingSubmission} className="rounded-full bg-hb-red px-5 py-2 text-sm font-bold text-white">
                 Retry QR code
               </button>
             </div>
           ) : (
-            <div className="w-72 h-72 rounded-hb-xl bg-white p-3 shadow-2xl">
+            <div className="kiosk-qr-code w-72 h-72 rounded-hb-xl bg-white p-3 shadow-2xl">
               <img src={qrSrc} alt="Scan to submit your score" className="w-full h-full object-contain" />
             </div>
           )}
@@ -211,14 +211,14 @@ export default function QrContactScreen({
               trackEvent('kiosk_manual_form_opened');
               setMode('manual');
             }}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-hb-border bg-hb-surface text-hb-text-muted hover:text-white hover:border-hb-text-muted text-sm font-semibold transition-colors"
+            className="kiosk-secondary-action inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-hb-border bg-hb-surface text-hb-text-muted hover:text-white hover:border-hb-text-muted text-sm font-semibold transition-colors"
           >
             <Pencil size={14} />
             Enter details here instead
           </button>
           <button
             onClick={onSkip}
-            className="mt-1 text-hb-text-muted/70 hover:text-white text-xs font-medium transition-colors hover:underline underline-offset-4"
+            className="kiosk-text-action mt-1 text-hb-text-muted/70 hover:text-white text-xs font-medium transition-colors hover:underline underline-offset-4"
           >
             Skip & view results
           </button>

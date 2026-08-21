@@ -4,9 +4,11 @@ import { applyIcpBoost, calculateScore } from '@/utils/scoring';
 import { base44 } from '@/api/base44Client';
 import { EMPTY_LEADERBOARD, usePublicLeaderboard } from '@/hooks/usePublicLeaderboard';
 import { useKioskInactivity } from '@/hooks/useKioskInactivity';
+import { useKioskInteractionGuards } from '@/hooks/useKioskInteractionGuards';
 import { DEFAULT_GAME_SETTINGS, normalizeGameSettings } from '@/utils/gameSettings';
 import { withTimeout } from '@/utils/withTimeout';
 import { trackEvent } from '@/utils/analytics';
+import { createTourPreloadQueue } from '@/utils/tourPreload';
 import {
   unlockAudio, playPinSound, playLockSound,
   playCelebrationSound, playErrorSound,
@@ -19,6 +21,7 @@ import ArcadeMapControls from '@/components/game/ArcadeMapControls';
 import GameSummary from '@/components/game/GameSummary';
 import PreRoundCountdown from '@/components/game/PreRoundCountdown';
 import CelebrationOverlay from '@/components/game/CelebrationOverlay';
+import SequentialTourPreloader from '@/components/game/SequentialTourPreloader';
 
 const GuessMap = lazy(() => import('@/components/game/GuessMap'));
 const RoundResult = lazy(() => import('@/components/game/RoundResult'));
@@ -85,9 +88,14 @@ export default function Game() {
   const [isOnline, setIsOnline] = useState(() => navigator.onLine);
   const [venueUnavailable, setVenueUnavailable] = useState(false);
   const [viewerRetryKey, setViewerRetryKey] = useState(0);
+  const [preparedGameResponse, setPreparedGameResponse] = useState(null);
   const startInFlightRef = useRef(false);
   const startRequestIdRef = useRef(0);
   const activeGameSessionRef = useRef(0);
+  const preparedGameResponseRef = useRef(null);
+  const preparationRequestRef = useRef(null);
+  const preparationGenerationRef = useRef(0);
+  const gameStateRef = useRef(GAME_STATES.SPLASH);
   const {
     data: publicLeaderboard = EMPTY_LEADERBOARD,
     isLoading: leaderboardLoading,
@@ -97,6 +105,12 @@ export default function Game() {
   });
   const activeCompetition = publicLeaderboard.competition;
   const activeSettings = normalizeGameSettings(activeCompetition);
+
+  useEffect(() => {
+    gameStateRef.current = gameState;
+  }, [gameState]);
+
+  useKioskInteractionGuards({ enabled: gameState !== GAME_STATES.SPLASH });
 
   useEffect(() => {
     // Remove the legacy persisted toggle so every fresh kiosk session starts at 1 Credit.
@@ -133,6 +147,7 @@ export default function Game() {
   }, [gameSettings.roundSeconds]);
 
   const resetKiosk = useCallback(() => {
+    const wasAlreadyOnSplash = gameStateRef.current === GAME_STATES.SPLASH;
     startRequestIdRef.current += 1;
     startInFlightRef.current = false;
     setGameState(GAME_STATES.SPLASH);
@@ -161,6 +176,12 @@ export default function Game() {
     setVenueUnavailable(false);
     setViewerRetryKey(0);
     activeGameSessionRef.current = 0;
+    if (!wasAlreadyOnSplash) {
+      preparationGenerationRef.current += 1;
+      preparationRequestRef.current = null;
+      preparedGameResponseRef.current = null;
+      setPreparedGameResponse(null);
+    }
   }, [activeSettings.icpMultiplier, activeSettings.kioskIdleSeconds, activeSettings.roundCount, activeSettings.roundSeconds]);
 
   useKioskInactivity({
@@ -169,6 +190,42 @@ export default function Game() {
       : gameSettings.kioskIdleSeconds,
     onIdle: resetKiosk,
   });
+
+  const requestPreparedGame = useCallback(() => {
+    if (preparedGameResponseRef.current) {
+      return Promise.resolve(preparedGameResponseRef.current);
+    }
+    if (preparationRequestRef.current) return preparationRequestRef.current;
+
+    const generation = preparationGenerationRef.current;
+    const request = withTimeout(
+      base44.functions.invoke('getPlayableVenues', {}),
+      VENUE_REQUEST_TIMEOUT_MS,
+      'The venue request took too long',
+    ).then((response) => {
+      const venues = response?.data?.venues;
+      if (!Array.isArray(venues) || venues.length === 0) {
+        throw new Error(response?.data?.error || 'No active venues are available');
+      }
+      if (preparationGenerationRef.current === generation) {
+        preparedGameResponseRef.current = response;
+        setPreparedGameResponse(response);
+      }
+      return response;
+    }).finally(() => {
+      if (preparationRequestRef.current === request) preparationRequestRef.current = null;
+    });
+
+    preparationRequestRef.current = request;
+    return request;
+  }, []);
+
+  useEffect(() => {
+    if (gameState !== GAME_STATES.SPLASH || !isOnline) return;
+    requestPreparedGame().catch(() => {
+      // Background preparation is best-effort. A tap on Start Game retries visibly.
+    });
+  }, [gameState, isOnline, requestPreparedGame]);
 
   const startSession = useCallback(async (demoMode) => {
     if (startInFlightRef.current) return;
@@ -181,11 +238,13 @@ export default function Game() {
     const startedAt = performance.now();
 
     try {
-      const response = await withTimeout(
-        base44.functions.invoke('getPlayableVenues', demoMode ? { demo: true } : {}),
-        VENUE_REQUEST_TIMEOUT_MS,
-        'The venue request took too long',
-      );
+      const response = demoMode
+        ? await withTimeout(
+          base44.functions.invoke('getPlayableVenues', { demo: true }),
+          VENUE_REQUEST_TIMEOUT_MS,
+          'The venue request took too long',
+        )
+        : await requestPreparedGame();
       if (startRequestIdRef.current !== requestId) return;
 
       const settings = normalizeGameSettings(response?.data?.settings);
@@ -264,7 +323,7 @@ export default function Game() {
         setStartMode(null);
       }
     }
-  }, [activeCompetition, icpBoostArmed, resetRoundState]);
+  }, [activeCompetition, icpBoostArmed, requestPreparedGame, resetRoundState]);
 
   const startDemo = useCallback(() => startSession(true), [startSession]);
   const startGame = useCallback(() => startSession(false), [startSession]);
@@ -426,21 +485,32 @@ export default function Game() {
 
   const currentVenue = shuffledVenues[currentRoundIndex];
   const isLastRound = currentRoundIndex >= shuffledVenues.length - 1;
+  const preparedSettings = normalizeGameSettings(preparedGameResponse?.data?.settings);
+  const preparedTourUrls = createTourPreloadQueue(
+    preparedGameResponse?.data?.venues,
+    preparedSettings.roundCount,
+  );
 
   if (gameState === GAME_STATES.SPLASH) {
     return (
-      <SplashScreen
-        onStart={startGame}
-        onDemo={startDemo}
-        leaderboardData={publicLeaderboard}
-        leaderboardLoading={leaderboardLoading}
-        leaderboardError={leaderboardError}
-        icpBoostArmed={icpBoostArmed}
-        onToggleIcpBoost={toggleIcpBoost}
-        startMode={startMode}
-        startError={startError}
-        isOnline={isOnline}
-      />
+      <>
+        <SplashScreen
+          onStart={startGame}
+          onDemo={startDemo}
+          leaderboardData={publicLeaderboard}
+          leaderboardLoading={leaderboardLoading}
+          leaderboardError={leaderboardError}
+          icpBoostArmed={icpBoostArmed}
+          onToggleIcpBoost={toggleIcpBoost}
+          startMode={startMode}
+          startError={startError}
+          isOnline={isOnline}
+        />
+        <SequentialTourPreloader
+          active={isOnline && !startMode}
+          tourUrls={preparedTourUrls}
+        />
+      </>
     );
   }
 
@@ -546,9 +616,9 @@ export default function Game() {
       )}
 
       {gameState === GAME_STATES.ROUND_RESULT && currentVenue && (
-        <div className="flex flex-col" style={{ minHeight: '100dvh' }}>
+        <div className="kiosk-result-screen flex flex-col" style={{ minHeight: '100dvh' }}>
           <GameHeader round={currentRoundIndex + 1} totalRounds={shuffledVenues.length} />
-          <div className="flex-1 p-3 md:p-4">
+          <div className="kiosk-result-container flex-1 p-3 md:p-4">
             <RoundResult
               roundNumber={currentRoundIndex + 1}
               venue={currentVenue}

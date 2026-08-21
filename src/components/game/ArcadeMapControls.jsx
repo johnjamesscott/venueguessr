@@ -7,6 +7,7 @@ function GBBtn({ size = 44, fontSize = 18, onClick, onMouseEnter, onMouseLeave, 
     <button
       onPointerDown={() => { setPressed(true); onClick?.(); }}
       onPointerUp={() => setPressed(false)}
+      onPointerCancel={() => setPressed(false)}
       onPointerLeave={() => { setPressed(false); onMouseLeave?.(); }}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
@@ -93,6 +94,7 @@ export default function ArcadeMapControls({ onZoom, timerSeconds, timerActive, o
         <button
           onPointerDown={() => { setResetPressed(true); onReset?.(); }}
           onPointerUp={() => setResetPressed(false)}
+          onPointerCancel={() => setResetPressed(false)}
           onPointerLeave={() => setResetPressed(false)}
           style={{
             background: resetPressed ? '#555' : '#3a3a3a',

@@ -121,3 +121,122 @@ input, textarea, select {
 .fade-in {
   animation: fadeIn 0.4s ease-out forwards;
 }
+
+/* Kiosk interaction rules apply only after the splash screen. */
+body.venueguessr-kiosk-active {
+  overscroll-behavior: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+body.venueguessr-kiosk-active button,
+body.venueguessr-kiosk-active a,
+body.venueguessr-kiosk-active [role='button'] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body.venueguessr-kiosk-active input,
+body.venueguessr-kiosk-active textarea,
+body.venueguessr-kiosk-active select,
+body.venueguessr-kiosk-active [contenteditable='true'] {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+
+.kiosk-round-result-map {
+  height: 280px;
+}
+
+.kiosk-text-action {
+  min-height: 52px;
+  padding: 12px 20px;
+}
+
+/* The installed 43-inch display reports a large portrait viewport in Chrome. */
+@media (orientation: portrait) and (min-width: 700px) and (min-height: 1200px) {
+  body.venueguessr-kiosk-active .kiosk-result-container {
+    display: flex;
+    align-items: center;
+    padding: 24px 32px 32px;
+  }
+
+  body.venueguessr-kiosk-active .kiosk-round-result {
+    max-width: 960px;
+    gap: 20px;
+  }
+
+  body.venueguessr-kiosk-active .kiosk-round-result-map {
+    height: clamp(420px, 34dvh, 620px);
+  }
+
+  body.venueguessr-kiosk-active .kiosk-result-card {
+    padding: 28px 32px;
+  }
+
+  body.venueguessr-kiosk-active .kiosk-result-distance {
+    font-size: 36px;
+  }
+
+  body.venueguessr-kiosk-active .kiosk-result-score {
+    font-size: 64px;
+  }
+
+  body.venueguessr-kiosk-active .kiosk-result-copy,
+  body.venueguessr-kiosk-active .kiosk-result-eyebrow,
+  body.venueguessr-kiosk-active .kiosk-result-legend {
+    font-size: 18px;
+  }
+
+  body.venueguessr-kiosk-active .kiosk-primary-action {
+    min-height: 76px;
+    font-size: 20px;
+  }
+
+  body.venueguessr-kiosk-active .kiosk-secondary-action {
+    min-height: 60px;
+    padding-inline: 28px;
+    font-size: 18px;
+  }
+
+  body.venueguessr-kiosk-active .kiosk-contact-panel {
+    max-width: 620px;
+  }
+
+  body.venueguessr-kiosk-active .kiosk-contact-panel h2 {
+    font-size: 44px;
+  }
+
+  body.venueguessr-kiosk-active .kiosk-contact-panel > p {
+    max-width: 520px;
+    font-size: 18px;
+  }
+
+  body.venueguessr-kiosk-active .kiosk-qr-code {
+    width: 352px;
+    height: 352px;
+  }
+
+  body.venueguessr-kiosk-active .kiosk-text-action {
+    min-height: 60px;
+    font-size: 14px;
+  }
+
+  body.venueguessr-kiosk-active .kiosk-contact-form {
+    max-width: 720px;
+    padding: 36px 40px;
+  }
+
+  body.venueguessr-kiosk-active .kiosk-contact-form input {
+    min-height: 62px;
+    padding-inline: 18px;
+    font-size: 20px !important;
+  }
+
+  body.venueguessr-kiosk-active .kiosk-summary-container {
+    max-width: 880px;
+    padding-block: 48px;
+  }
+}

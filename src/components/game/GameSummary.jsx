@@ -15,7 +15,7 @@ export default function GameSummary({ results, venues, totalScore, playerEntryId
     <div className="min-h-screen bg-hb-bg flex flex-col">
       <GameHeader />
 
-      <div className="flex-1 max-w-2xl mx-auto w-full px-4 py-8 md:py-10 space-y-6">
+      <div className="kiosk-summary-container flex-1 max-w-2xl mx-auto w-full px-4 py-8 md:py-10 space-y-6">
         {/* Hero score */}
         <div className="text-center fade-in">
           <div className="inline-flex items-center gap-2 bg-hb-red/10 border border-hb-red/30 text-hb-red text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-hb-xl mb-4">
@@ -80,7 +80,7 @@ export default function GameSummary({ results, venues, totalScore, playerEntryId
         {/* Play again */}
         <button
           onClick={onPlayAgain}
-          className="w-full flex items-center justify-center gap-2 bg-transparent border-2 border-white/20 hover:border-white/40 text-white font-bold uppercase tracking-widest text-sm py-4 rounded-hb-xl transition-colors duration-200"
+          className="kiosk-primary-action w-full flex items-center justify-center gap-2 bg-transparent border-2 border-white/20 hover:border-white/40 text-white font-bold uppercase tracking-widest text-sm py-4 rounded-hb-xl transition-colors duration-200"
         >
           <RotateCcw size={16} />
           Play Again

@@ -12,11 +12,23 @@ export default function MatterportViewer({ tourUrl, nextTourUrl, onError, onLoad
   }
   const iframeRef = useRef(null);
   const errorReportedRef = useRef(false);
+  const attemptRef = useRef(0);
+  const failedAttemptRef = useRef(-1);
   const [errored, setErrored] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const reportError = React.useCallback(() => {
-    if (errorReportedRef.current) return;
+    if (errorReportedRef.current || failedAttemptRef.current === attemptRef.current) return;
+    failedAttemptRef.current = attemptRef.current;
+
+    if (navigator.onLine && attemptRef.current < 1) {
+      attemptRef.current += 1;
+      setLoaded(false);
+      setReloadKey((key) => key + 1);
+      return;
+    }
+
     errorReportedRef.current = true;
     setErrored(true);
     onError?.();
@@ -27,6 +39,9 @@ export default function MatterportViewer({ tourUrl, nextTourUrl, onError, onLoad
     setErrored(false);
     setLoaded(false);
     errorReportedRef.current = false;
+    attemptRef.current = 0;
+    failedAttemptRef.current = -1;
+    setReloadKey(0);
   }, [tourUrl]);
 
   useEffect(() => {
@@ -38,12 +53,16 @@ export default function MatterportViewer({ tourUrl, nextTourUrl, onError, onLoad
       if (!loaded) reportError();
     }, loadTimeoutMs);
     return () => window.clearTimeout(timeoutId);
-  }, [embedUrl, loadTimeoutMs, loaded, reportError]);
+  }, [embedUrl, loadTimeoutMs, loaded, reloadKey, reportError]);
 
   // Detect Matterport "model not available" via postMessage
   useEffect(() => {
     const handleMessage = (e) => {
-      if (!trustedMessageOrigin || e.origin !== trustedMessageOrigin) return;
+      if (
+        !trustedMessageOrigin
+        || e.origin !== trustedMessageOrigin
+        || e.source !== iframeRef.current?.contentWindow
+      ) return;
       try {
         const msg = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
         // Matterport SDK sends model.error or similar when unavailable
@@ -92,6 +111,7 @@ export default function MatterportViewer({ tourUrl, nextTourUrl, onError, onLoad
   return (
     <div className="relative w-full h-full">
       <iframe
+        key={`${embedUrl}-${reloadKey}`}
         ref={iframeRef}
         src={embedUrl}
         className="w-full h-full border-0"
