@@ -1,13 +1,17 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
 // Shared email template builder — used by the function and the preview endpoint
+// HeadBox design system: Montserrat, white card on light-neutral, #4A4C49 body, #AF231C accents only.
 function buildEmailHtml({ first_name, total_score, round_results }) {
+  const FONT = "'Montserrat',Arial,Helvetica,sans-serif";
+
   const venueRows = (round_results || []).map((r, i) => `
     <tr>
-      <td style="padding:12px 20px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#cccccc;border-bottom:1px solid #333333;">
-        Round ${i + 1} — ${r.venue_name || 'Unknown'}${r.city ? `, ${r.city}` : ''}
+      <td style="padding:14px 20px;font-family:${FONT};font-size:14px;color:#4A4C49;border-bottom:1px solid #ececec;">
+        <span style="font-weight:600;color:#1a1a1a;">Round ${i + 1}</span><br/>
+        ${r.venue_name || 'Unknown'}${r.city ? ` &middot; ${r.city}` : ''}
       </td>
-      <td style="padding:12px 20px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:700;color:#ffffff;text-align:right;border-bottom:1px solid #333333;">
+      <td style="padding:14px 20px;font-family:${FONT};font-size:14px;font-weight:700;color:#1a1a1a;text-align:right;border-bottom:1px solid #ececec;vertical-align:top;white-space:nowrap;">
         ${(r.score || 0).toLocaleString()} pts
       </td>
     </tr>
@@ -27,39 +31,37 @@ function buildEmailHtml({ first_name, total_score, round_results }) {
   </noscript>
   <![endif]-->
   <style type="text/css">
-    /* Force light mode — override email client dark mode */
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
     :root { color-scheme: light only; }
-    body { margin:0!important; padding:0!important; background-color:#f4f4f4!important; -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
+    body { margin:0!important; padding:0!important; background-color:#f7f7f6!important; -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
     table { border-spacing:0; mso-table-lspace:0pt; mso-table-rspace:0pt; }
     img { border:0; outline:none; text-decoration:none; -ms-interpolation-mode:bicubic; }
-    /* Prevent Gmail from overriding colors */
-    u + .body .hb-wrapper { background-color:#f4f4f4!important; }
-    /* Outlook fixes */
+    u + .body .hb-wrapper { background-color:#f7f7f6!important; }
     .ExternalClass { width:100%; }
     .ExternalClass, .ExternalClass p, .ExternalClass span, .ExternalClass font, .ExternalClass td, .ExternalClass div { line-height:100%; }
   </style>
 </head>
-<body class="body" style="margin:0;padding:0;background-color:#f4f4f4;">
+<body class="body" style="margin:0;padding:0;background-color:#f7f7f6;">
 
 <!-- Preheader (hidden) -->
-<div style="display:none;max-height:0;overflow:hidden;font-size:1px;line-height:1px;color:#f4f4f4;mso-hide:all;">
+<div style="display:none;max-height:0;overflow:hidden;font-size:1px;line-height:1px;color:#f7f7f6;mso-hide:all;">
   You scored ${(total_score || 0).toLocaleString()} pts in VenueGuessr. See your full round breakdown inside.
 </div>
 
-<table class="hb-wrapper" border="0" cellpadding="0" cellspacing="0" width="100%" bgcolor="#f4f4f4" style="background-color:#f4f4f4;">
+<table class="hb-wrapper" border="0" cellpadding="0" cellspacing="0" width="100%" bgcolor="#f7f7f6" style="background-color:#f7f7f6;">
   <tr>
     <td align="center" style="padding:32px 16px;">
 
       <!-- Outer card -->
-      <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width:560px;background-color:#1a1a1a;border-radius:12px;overflow:hidden;">
+      <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width:560px;background-color:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #ececec;">
 
         <!-- ═══ HEADER ═══ -->
         <tr>
-          <td align="center" bgcolor="#AF231C" style="padding:32px 32px 24px;background-color:#AF231C;">
+          <td align="center" bgcolor="#ffffff" style="padding:36px 32px 28px;background-color:#ffffff;border-bottom:3px solid #AF231C;">
             <img src="https://cdn.prod.website-files.com/63bd498079b1380a81c6e13b/63bd498079b1384ca2c6e19d_HeadBox-Logo-Brick-header.png"
-                 alt="HeadBox" width="130" height="auto"
-                 style="display:block;margin:0 auto 16px;border:0;filter:brightness(0) invert(1);" />
-            <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:24px;font-weight:900;color:#ffffff;letter-spacing:1px;">
+                 alt="HeadBox" width="120" height="auto"
+                 style="display:block;margin:0 auto 14px;border:0;" />
+            <p style="margin:0;font-family:${FONT};font-size:13px;font-weight:700;color:#AF231C;letter-spacing:2px;text-transform:uppercase;">
               VenueGuessr
             </p>
           </td>
@@ -67,11 +69,11 @@ function buildEmailHtml({ first_name, total_score, round_results }) {
 
         <!-- ═══ INTRO ═══ -->
         <tr>
-          <td bgcolor="#1a1a1a" style="padding:32px 32px 0;background-color:#1a1a1a;">
-            <p style="margin:0 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:18px;font-weight:700;color:#ffffff;">
+          <td bgcolor="#ffffff" style="padding:32px 32px 0;background-color:#ffffff;">
+            <p style="margin:0 0 8px;font-family:${FONT};font-size:20px;font-weight:700;color:#1a1a1a;">
               Hi ${first_name || 'there'},
             </p>
-            <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.7;color:#aaaaaa;">
+            <p style="margin:0;font-family:${FONT};font-size:15px;line-height:1.7;color:#4A4C49;">
               Thanks for playing VenueGuessr at the HeadBox stand! Here&apos;s a summary of your game.
             </p>
           </td>
@@ -79,17 +81,17 @@ function buildEmailHtml({ first_name, total_score, round_results }) {
 
         <!-- ═══ SCORE HIGHLIGHT ═══ -->
         <tr>
-          <td bgcolor="#1a1a1a" style="padding:24px 32px;background-color:#1a1a1a;">
-            <table border="0" cellpadding="0" cellspacing="0" width="100%" bgcolor="#222222" style="background-color:#222222;border-radius:8px;">
+          <td bgcolor="#ffffff" style="padding:24px 32px;background-color:#ffffff;">
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" bgcolor="#fbf4f3" style="background-color:#fbf4f3;border-radius:12px;border:1px solid #f0d9d7;">
               <tr>
-                <td align="center" style="padding:24px 20px;">
-                  <p style="margin:0 0 4px;font-family:Arial,Helvetica,sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#888888;">
+                <td align="center" style="padding:28px 20px;">
+                  <p style="margin:0 0 6px;font-family:${FONT};font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#AF231C;">
                     Your Total Score
                   </p>
-                  <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:52px;font-weight:900;color:#ffffff;line-height:1.1;">
+                  <p style="margin:0;font-family:${FONT};font-size:52px;font-weight:900;color:#1a1a1a;line-height:1.1;">
                     ${(total_score || 0).toLocaleString()}
                   </p>
-                  <p style="margin:4px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#555555;">
+                  <p style="margin:6px 0 0;font-family:${FONT};font-size:13px;color:#7a7c78;">
                     points
                   </p>
                 </td>
@@ -101,11 +103,11 @@ function buildEmailHtml({ first_name, total_score, round_results }) {
         <!-- ═══ ROUND BREAKDOWN ═══ -->
         ${venueRows ? `
         <tr>
-          <td bgcolor="#1a1a1a" style="padding:0 32px 24px;background-color:#1a1a1a;">
-            <p style="margin:0 0 12px;font-family:Arial,Helvetica,sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#ffffff;">
+          <td bgcolor="#ffffff" style="padding:0 32px 24px;background-color:#ffffff;">
+            <p style="margin:0 0 12px;font-family:${FONT};font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#4A4C49;">
               Round Breakdown
             </p>
-            <table border="0" cellpadding="0" cellspacing="0" width="100%" bgcolor="#222222" style="background-color:#222222;border-radius:8px;overflow:hidden;">
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" bgcolor="#ffffff" style="background-color:#ffffff;border-radius:12px;border:1px solid #ececec;overflow:hidden;">
               ${venueRows}
             </table>
           </td>
@@ -114,8 +116,8 @@ function buildEmailHtml({ first_name, total_score, round_results }) {
 
         <!-- ═══ BODY COPY ═══ -->
         <tr>
-          <td bgcolor="#1a1a1a" style="padding:0 32px 28px;background-color:#1a1a1a;">
-            <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.7;color:#aaaaaa;">
+          <td bgcolor="#ffffff" style="padding:0 32px 28px;background-color:#ffffff;">
+            <p style="margin:0;font-family:${FONT};font-size:15px;line-height:1.7;color:#4A4C49;">
               We&apos;ll be in touch to announce the competition winners. Good luck! 🎯
             </p>
           </td>
@@ -123,14 +125,14 @@ function buildEmailHtml({ first_name, total_score, round_results }) {
 
         <!-- ═══ CTA BUTTON ═══ -->
         <tr>
-          <td bgcolor="#1a1a1a" align="center" style="padding:0 32px 36px;background-color:#1a1a1a;">
+          <td bgcolor="#ffffff" align="center" style="padding:0 32px 36px;background-color:#ffffff;">
             <table border="0" cellpadding="0" cellspacing="0">
               <tr>
                 <td align="center" bgcolor="#AF231C" style="border-radius:50px;background-color:#AF231C;">
-                  <!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="https://app.headbox.com/plan-my-event" style="height:52px;v-text-anchor:middle;width:280px;" arcsize="50%" strokecolor="#AF231C" fillcolor="#AF231C"><w:anchorlock/><center style="color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:700;">Ready to plan your next event? →</center></v:roundrect><![endif]-->
+                  <!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="https://app.headbox.com/plan-my-event" style="height:52px;v-text-anchor:middle;width:280px;" arcsize="50%" strokecolor="#AF231C" fillcolor="#AF231C"><w:anchorlock/><center style="color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:700;">Ready to plan your next event? &rarr;</center></v:roundrect><![endif]-->
                   <!--[if !mso]><!-->
                   <a href="https://app.headbox.com/plan-my-event"
-                     style="display:inline-block;background-color:#AF231C;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:700;text-decoration:none;padding:16px 40px;border-radius:50px;letter-spacing:0.5px;">
+                     style="display:inline-block;background-color:#AF231C;color:#ffffff;font-family:${FONT};font-size:15px;font-weight:700;text-decoration:none;padding:16px 40px;border-radius:50px;letter-spacing:0.5px;">
                     Ready to plan your next event? &rarr;
                   </a>
                   <!--<![endif]-->
@@ -142,10 +144,10 @@ function buildEmailHtml({ first_name, total_score, round_results }) {
 
         <!-- ═══ FOOTER ═══ -->
         <tr>
-          <td bgcolor="#111111" align="center" style="padding:20px 32px;background-color:#111111;border-top:1px solid #2a2a2a;border-radius:0 0 12px 12px;">
-            <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#555555;">
+          <td bgcolor="#fafafa" align="center" style="padding:20px 32px;background-color:#fafafa;border-top:1px solid #ececec;border-radius:0 0 12px 12px;">
+            <p style="margin:0;font-family:${FONT};font-size:12px;color:#8a8c88;">
               &copy; HeadBox &middot;
-              <a href="https://www.headbox.com" style="color:#AF231C;text-decoration:none;">headbox.com</a>
+              <a href="https://www.headbox.com" style="color:#AF231C;text-decoration:none;font-weight:600;">headbox.com</a>
             </p>
           </td>
         </tr>
