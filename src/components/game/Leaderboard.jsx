@@ -11,6 +11,7 @@ const RANK_STYLES = [
 export default function Leaderboard({ highlightEntryId = null, competitionId = null }) {
   const { data = EMPTY_LEADERBOARD, isLoading: loading, isError } = usePublicLeaderboard({ competitionId });
   const entries = data.entries.slice(0, 10);
+  const roundCount = data.competition?.settings?.roundCount || 3;
 
   return (
     <div className="bg-hb-surface rounded-hb-lg border border-hb-border overflow-hidden">
@@ -58,7 +59,9 @@ export default function Leaderboard({ highlightEntryId = null, competitionId = n
                     {entry.player_name}
                     {isHighlighted && <span className="text-hb-red text-xs ml-1">(you)</span>}
                   </p>
-                  <p className="text-hb-text-muted text-xs">{Math.min(entry.rounds_played ?? 0, 3)} rounds</p>
+                  <p className="text-hb-text-muted text-xs">
+                    {Math.min(entry.rounds_played ?? 0, roundCount)} {entry.rounds_played === 1 ? 'round' : 'rounds'}
+                  </p>
                 </div>
 
                 <div className="text-right shrink-0">

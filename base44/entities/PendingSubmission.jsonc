@@ -61,6 +61,15 @@
       "type": "boolean",
       "default": false,
       "description": "True after the post-game email has been sent"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Time after which an unfinished anonymous submission is invalid"
+    },
+    "request_fingerprint": {
+      "type": "string",
+      "description": "Privacy-safe hash used only for anonymous submission rate limiting"
     }
   },
   "required": [

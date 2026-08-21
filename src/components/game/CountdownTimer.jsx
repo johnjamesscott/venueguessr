@@ -7,22 +7,31 @@ const CIRC = 2 * Math.PI * R;
 
 export default function CountdownTimer({ seconds, onExpire, onTick, isActive }) {
   const intervalRef = useRef(null);
+  const expiredRef = useRef(false);
   const [timeLeft, setTimeLeft] = React.useState(seconds);
 
-  useEffect(() => { setTimeLeft(seconds); }, [seconds]);
+  useEffect(() => {
+    setTimeLeft(seconds);
+    expiredRef.current = false;
+  }, [seconds]);
 
   useEffect(() => {
     if (!isActive) { clearInterval(intervalRef.current); return; }
     intervalRef.current = setInterval(() => {
-      setTimeLeft(prev => {
-        const next = prev <= 1 ? 0 : prev - 1;
-        onTick?.(next);
-        if (next === 0) { clearInterval(intervalRef.current); onExpire(); }
-        return next;
-      });
+      setTimeLeft(prev => (prev <= 1 ? 0 : prev - 1));
     }, 1000);
     return () => clearInterval(intervalRef.current);
-  }, [isActive, onExpire, onTick]);
+  }, [isActive]);
+
+  useEffect(() => {
+    if (!isActive) return;
+    onTick?.(timeLeft);
+    if (timeLeft === 0 && !expiredRef.current) {
+      expiredRef.current = true;
+      clearInterval(intervalRef.current);
+      onExpire();
+    }
+  }, [isActive, onExpire, onTick, timeLeft]);
 
   const isUrgent = timeLeft <= 10;
   const progress = timeLeft / seconds;

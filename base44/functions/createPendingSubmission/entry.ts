@@ -1,8 +1,15 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.43';
-
-const MAX_ROUNDS = 3;
-const MAX_BASE_ROUND_SCORE = 5_000;
-const ICP_BOOST_FACTOR = 1.25;
+import {
+  calculateSubmittedRoundScore,
+  MAX_ROUNDS,
+  normalizeIcpMultiplier,
+} from './scoreSubmission.js';
+import {
+  getExpiredSubmissionIds,
+  getRateLimitDecision,
+  getRequestFingerprint,
+  SUBMISSION_TTL_MS,
+} from './submissionSecurity.js';
 
 const clampNumber = (value, min, max) => {
   const number = Number(value);
@@ -21,24 +28,56 @@ Deno.serve(async (req) => {
     const { competition_id, round_results, icp_boosted } = body;
     const boosted = icp_boosted === true;
 
+    // Opportunistically remove abandoned anonymous tokens. Completed records,
+    // leads and leaderboard entries are never touched by this cleanup.
+    const cleanupPromise = Promise.all([
+      base44.asServiceRole.entities.PendingSubmission.filter({ status: 'pending' }, 'created_date', 50),
+      base44.asServiceRole.entities.PendingSubmission.filter({ status: 'expired' }, 'created_date', 50),
+    ]).then(async ([pending, expired]) => {
+      const expiredIds = getExpiredSubmissionIds([...pending, ...expired]);
+      await Promise.allSettled(
+        expiredIds.map(id => base44.asServiceRole.entities.PendingSubmission.delete(id)),
+      );
+    }).catch(() => {});
+
+    const requestFingerprint = await getRequestFingerprint(req);
+    if (requestFingerprint) {
+      const recent = await base44.asServiceRole.entities.PendingSubmission.filter(
+        { request_fingerprint: requestFingerprint },
+        '-created_date',
+        50,
+      );
+      const rateLimit = getRateLimitDecision(recent);
+      if (rateLimit.limited) {
+        await cleanupPromise;
+        return Response.json(
+          { error: 'Too many score submissions. Please wait and try again.' },
+          { status: 429, headers: { 'Retry-After': String(rateLimit.retryAfterSeconds) } },
+        );
+      }
+    }
+
+    const competitions = await base44.asServiceRole.entities.Competition.filter({ active: true });
+    const activeCompetition = competitions[0] || null;
+    const roundCount = Math.min(
+      MAX_ROUNDS,
+      Math.max(1, Math.round(Number(activeCompetition?.round_count) || 3)),
+    );
+    const icpMultiplier = normalizeIcpMultiplier(activeCompetition?.icp_multiplier);
+
     const sanitizedRounds = Array.isArray(round_results)
-      ? round_results.slice(0, MAX_ROUNDS).map((round) => {
-        const baseScore = Math.round(clampNumber(round?.score, 0, MAX_BASE_ROUND_SCORE));
-        return {
-          venue_name: cleanText(round?.venue_name, 120) || 'Unknown Venue',
-          city: cleanText(round?.city, 80),
-          score: boosted ? Math.round(baseScore * ICP_BOOST_FACTOR) : baseScore,
-          distance_km: clampNumber(round?.distance_km, 0, 20_000),
-        };
-      })
+      ? round_results.slice(0, roundCount).map((round) => ({
+        venue_name: cleanText(round?.venue_name, 120) || 'Unknown Venue',
+        city: cleanText(round?.city, 80),
+        score: calculateSubmittedRoundScore(round?.score, boosted, icpMultiplier),
+        distance_km: clampNumber(round?.distance_km, 0, 20_000),
+      }))
       : [];
 
     if (sanitizedRounds.length === 0) {
       return Response.json({ error: 'At least one round result is required' }, { status: 400 });
     }
 
-    const competitions = await base44.asServiceRole.entities.Competition.filter({ active: true });
-    const activeCompetition = competitions[0] || null;
     const requestedCompetitionId = cleanText(competition_id, 100);
     const resolvedCompetitionId = activeCompetition?.id === requestedCompetitionId
       ? requestedCompetitionId
@@ -49,6 +88,7 @@ Deno.serve(async (req) => {
       / sanitizedRounds.length;
 
     const token = crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + SUBMISSION_TTL_MS).toISOString();
 
     const rec = await base44.asServiceRole.entities.PendingSubmission.create({
       token,
@@ -59,7 +99,11 @@ Deno.serve(async (req) => {
       status: 'pending',
       icp_boosted: boosted,
       email_sent: false,
+      expires_at: expiresAt,
+      ...(requestFingerprint ? { request_fingerprint: requestFingerprint } : {}),
     });
+
+    await cleanupPromise;
 
     return Response.json({ token, id: rec.id });
   } catch (error) {

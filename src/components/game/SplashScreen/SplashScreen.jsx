@@ -132,6 +132,9 @@ export default function SplashScreen({
   leaderboardError,
   icpBoostArmed,
   onToggleIcpBoost,
+  startMode,
+  startError,
+  isOnline,
 }) {
   const handleStart = (e) => {
     e.preventDefault();
@@ -227,10 +230,16 @@ export default function SplashScreen({
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
             <button
               className="splash-btn"
-              style={styles.button}
+              style={{
+                ...styles.button,
+                opacity: startMode || !isOnline ? 0.65 : 1,
+                cursor: startMode || !isOnline ? 'wait' : 'pointer',
+              }}
               onClick={handleStart}
+              disabled={Boolean(startMode) || !isOnline}
+              aria-busy={startMode === 'game'}
             >
-              <span className="splash-btn-text">Start Game</span>
+              <span className="splash-btn-text">{startMode === 'game' ? 'Loading Game…' : 'Start Game'}</span>
             </button>
             <button
               type="button"
@@ -238,6 +247,7 @@ export default function SplashScreen({
               aria-label={`Switch to ${icpBoostArmed ? '1 Credit' : '2 Credits'}`}
               aria-pressed={icpBoostArmed}
               onClick={onToggleIcpBoost}
+              disabled={Boolean(startMode)}
               style={{
                 fontFamily: 'Montserrat, sans-serif',
                 fontWeight: 800,
@@ -251,13 +261,24 @@ export default function SplashScreen({
                 borderRadius: 12,
                 padding: '8px 18px',
                 minHeight: 64,
-                cursor: 'pointer',
+                cursor: startMode ? 'wait' : 'pointer',
+                opacity: startMode ? 0.65 : 1,
                 touchAction: 'manipulation',
                 WebkitTapHighlightColor: 'transparent',
               }}
             >
               ★ {icpBoostArmed ? '2 Credits' : '1 Credit'} ★
             </button>
+            {!isOnline && (
+              <p role="status" style={{ margin: 0, color: '#FFD166', fontSize: 22, fontWeight: 700 }}>
+                Kiosk offline — reconnect to start
+              </p>
+            )}
+            {startError && (
+              <div role="alert" style={{ maxWidth: 620, borderRadius: 16, background: 'rgba(0,0,0,0.65)', padding: '12px 20px', color: '#fff', fontSize: 20, fontWeight: 600 }}>
+                {startError} Tap a play option to retry.
+              </div>
+            )}
           </div>
         </div>
 
@@ -274,15 +295,18 @@ export default function SplashScreen({
               border: '2px solid rgba(255,255,255,0.5)',
               borderRadius: 50,
               padding: '16px 56px',
-              cursor: 'pointer',
               letterSpacing: '0.5px',
               WebkitTapHighlightColor: 'transparent',
               touchAction: 'manipulation',
               textTransform: 'uppercase',
+              opacity: startMode || !isOnline ? 0.65 : 1,
+              cursor: startMode || !isOnline ? 'wait' : 'pointer',
             }}
             onClick={handleDemo}
+            disabled={Boolean(startMode) || !isOnline}
+            aria-busy={startMode === 'demo'}
           >
-            Play Demo
+            {startMode === 'demo' ? 'Loading Demo…' : 'Play Demo'}
           </button>
         </div>
 

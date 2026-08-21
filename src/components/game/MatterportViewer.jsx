@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { getEmbedUrl } from '@/data/venues';
 
-export default function MatterportViewer({ tourUrl, nextTourUrl, onError }) {
+export default function MatterportViewer({ tourUrl, nextTourUrl, onError, onLoaded, loadTimeoutMs = 12_000 }) {
   const embedUrl = getEmbedUrl(tourUrl);
   const nextEmbedUrl = getEmbedUrl(nextTourUrl);
   let trustedMessageOrigin = null;
@@ -11,12 +11,34 @@ export default function MatterportViewer({ tourUrl, nextTourUrl, onError }) {
     // A malformed admin-entered URL is handled by the normal venue fallback.
   }
   const iframeRef = useRef(null);
+  const errorReportedRef = useRef(false);
   const [errored, setErrored] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  const reportError = React.useCallback(() => {
+    if (errorReportedRef.current) return;
+    errorReportedRef.current = true;
+    setErrored(true);
+    onError?.();
+  }, [onError]);
 
   // Reset error state when tourUrl changes
   useEffect(() => {
     setErrored(false);
+    setLoaded(false);
+    errorReportedRef.current = false;
   }, [tourUrl]);
+
+  useEffect(() => {
+    if (!embedUrl) {
+      reportError();
+      return undefined;
+    }
+    const timeoutId = window.setTimeout(() => {
+      if (!loaded) reportError();
+    }, loadTimeoutMs);
+    return () => window.clearTimeout(timeoutId);
+  }, [embedUrl, loadTimeoutMs, loaded, reportError]);
 
   // Detect Matterport "model not available" via postMessage
   useEffect(() => {
@@ -30,15 +52,14 @@ export default function MatterportViewer({ tourUrl, nextTourUrl, onError }) {
           msg?.name === 'model.error' ||
           (typeof e.data === 'string' && e.data.toLowerCase().includes('model not available'))
         ) {
-          setErrored(true);
-          onError?.();
+          reportError();
         }
       } catch (_) {}
     };
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [onError, trustedMessageOrigin]);
+  }, [reportError, trustedMessageOrigin]);
 
   // Fallback: poll iframe title for "Oops" text (fires once iframe loads)
   useEffect(() => {
@@ -50,8 +71,7 @@ export default function MatterportViewer({ tourUrl, nextTourUrl, onError }) {
         const title = iframeRef.current?.contentDocument?.title || '';
         if (title.toLowerCase().includes('oops') || title.toLowerCase().includes('not available')) {
           clearInterval(interval);
-          setErrored(true);
-          onError?.();
+          reportError();
         }
       } catch (_) {
         // cross-origin — ignore
@@ -59,7 +79,7 @@ export default function MatterportViewer({ tourUrl, nextTourUrl, onError }) {
       if (attempts > 20) clearInterval(interval); // stop after ~10s
     }, 500);
     return () => clearInterval(interval);
-  }, [embedUrl, onError]);
+  }, [embedUrl, reportError]);
 
   if (!embedUrl || errored) {
     return (
@@ -78,6 +98,10 @@ export default function MatterportViewer({ tourUrl, nextTourUrl, onError }) {
         allow="xr-spatial-tracking; gyroscope; accelerometer; fullscreen"
         allowFullScreen
         title="Venue 3D Tour"
+        onLoad={() => {
+          setLoaded(true);
+          onLoaded?.();
+        }}
       />
       {/* Hidden preload iframe for next venue */}
       {nextEmbedUrl && (

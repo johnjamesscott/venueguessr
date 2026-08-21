@@ -195,7 +195,7 @@ Deno.serve(async (req) => {
       const html = buildEmailHtml({
         first_name: body?.first_name || 'Jane',
         total_score: body?.total_score || 8750,
-        round_results: Array.isArray(body?.round_results) ? body.round_results.slice(0, 3) : [],
+        round_results: Array.isArray(body?.round_results) ? body.round_results.slice(0, 5) : [],
       });
       return Response.json({ html });
     }
