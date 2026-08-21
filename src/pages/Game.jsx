@@ -182,7 +182,7 @@ export default function Game() {
 
     try {
       const response = await withTimeout(
-        base44.functions.invoke('getRandomVenues', demoMode ? { demo: true } : {}),
+        base44.functions.invoke('getPlayableVenues', demoMode ? { demo: true } : {}),
         VENUE_REQUEST_TIMEOUT_MS,
         'The venue request took too long',
       );
