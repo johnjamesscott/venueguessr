@@ -1,42 +1,85 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Delete } from 'lucide-react';
+import { Check, ChevronDown, ChevronRight, Delete } from 'lucide-react';
 
 const ROWS = [
-  ['q','w','e','r','t','y','u','i','o','p'],
-  ['a','s','d','f','g','h','j','k','l'],
-  ['z','x','c','v','b','n','m'],
+  ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
+  ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
+  ['z', 'x', 'c', 'v', 'b', 'n', 'm'],
 ];
 
-const NUMBERS = ['1','2','3','4','5','6','7','8','9','0'];
-const SYMBOLS = ['@','.','_','-','#','!','&','+','(',')','/'];
+const NUMBERS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
+const SYMBOLS = ['@', '.', '_', '-', '#', '&', '+', '(', ')', '/'];
+const KIOSK_FIELD_SELECTOR = '[data-kiosk-keyboard="true"]';
+const KEYBOARD_HEIGHT = 'clamp(300px, 38dvh, 430px)';
+const KEY_FONT = 'clamp(18px, 2.2vw, 28px)';
+
+const getFormFields = (target) => Array.from(
+  target?.closest('form')?.querySelectorAll(KIOSK_FIELD_SELECTOR) || [],
+).filter((field) => !field.disabled && field.getAttribute('aria-hidden') !== 'true');
+
+const getNextField = (target) => {
+  const fields = getFormFields(target);
+  const currentIndex = fields.indexOf(target);
+  return currentIndex >= 0 ? fields[currentIndex + 1] || null : null;
+};
+
+const setNativeValue = (element, value) => {
+  const prototype = element.tagName === 'TEXTAREA'
+    ? window.HTMLTextAreaElement.prototype
+    : window.HTMLInputElement.prototype;
+  const setter = Object.getOwnPropertyDescriptor(prototype, 'value')?.set;
+  if (setter) setter.call(element, value);
+  else element.value = value;
+  element.dispatchEvent(new Event('input', { bubbles: true }));
+};
+
+const setCaretPosition = (element, position) => {
+  try {
+    element.setSelectionRange(position, position);
+  } catch (_) {
+    // Chromium does not expose selection APIs for inputs such as type="email".
+  }
+};
 
 export default function VirtualKeyboard() {
   const [visible, setVisible] = useState(false);
-  const [target, setTarget] = useState(/** @type {any} */ (null));
+  const [target, setTarget] = useState(/** @type {HTMLInputElement | HTMLTextAreaElement | null} */ (null));
   const [shifted, setShifted] = useState(false);
   const [tab, setTab] = useState('alpha');
 
+  const hideKeyboard = useCallback(() => {
+    const active = /** @type {HTMLElement | null} */ (document.activeElement);
+    if (active?.matches?.(KIOSK_FIELD_SELECTOR)) active.blur();
+    setVisible(false);
+    setTarget(null);
+    setShifted(false);
+    setTab('alpha');
+  }, []);
+
   useEffect(() => {
-    const onFocus = (e) => {
-      // Never show the kiosk virtual keyboard on the mobile QR submission route
-      if (typeof window !== 'undefined' && window.location.pathname.startsWith('/submit')) {
-        return;
-      }
-      const el = e.target;
-      if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable) {
-        setTarget(el);
-        setVisible(true);
-      }
+    const onFocus = (event) => {
+      const element = /** @type {HTMLElement} */ (event.target);
+      if (!element?.matches?.(KIOSK_FIELD_SELECTOR)) return;
+
+      setTarget(/** @type {HTMLInputElement | HTMLTextAreaElement} */ (element));
+      setVisible(true);
+      setShifted(false);
+      setTab('alpha');
+      window.setTimeout(() => {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 120);
     };
+
     const onBlur = () => {
-      setTimeout(() => {
+      window.setTimeout(() => {
         const active = /** @type {HTMLElement | null} */ (document.activeElement);
-        if (!active || (active.tagName !== 'INPUT' && active.tagName !== 'TEXTAREA' && !active.isContentEditable)) {
+        if (!active?.matches?.(KIOSK_FIELD_SELECTOR)) {
           setVisible(false);
           setTarget(null);
         }
-      }, 150);
+      }, 180);
     };
+
     document.addEventListener('focusin', onFocus);
     document.addEventListener('focusout', onBlur);
     return () => {
@@ -45,244 +88,265 @@ export default function VirtualKeyboard() {
     };
   }, []);
 
-  const isEmailField = target?.type === 'email' || target?.inputMode === 'email' || target?.autocomplete === 'email';
-  const isNameField = ['firstName', 'lastName', 'company'].includes(target?.name) || ['firstName', 'lastName', 'company'].includes(target?.id);
+  useEffect(() => {
+    if (visible) document.documentElement.dataset.kioskKeyboard = 'open';
+    else delete document.documentElement.dataset.kioskKeyboard;
 
-  const press = useCallback((char) => {
-    const el = target;
-    if (!el) return;
-    el.focus();
-    // Auto-capitalise first character for name fields
-    const isName = ['firstName', 'lastName', 'company'].includes(el?.name) || ['firstName', 'lastName', 'company'].includes(el?.id);
-    const finalChar = (isName && el.value.length === 0) ? char.toUpperCase() : char;
-    if (el.isContentEditable) {
-      document.execCommand('insertText', false, finalChar);
-    } else {
-      const start = el.selectionStart ?? el.value.length;
-      const end = el.selectionEnd ?? el.value.length;
-      const newVal = el.value.slice(0, start) + finalChar + el.value.slice(end);
-      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set
-        || Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set;
-      if (nativeInputValueSetter) {
-        nativeInputValueSetter.call(el, newVal);
-      } else {
-        el.value = newVal;
-      }
-      el.dispatchEvent(new Event('input', { bubbles: true }));
-      const newPos = start + finalChar.length;
-      el.setSelectionRange(newPos, newPos);
-    }
+    window.dispatchEvent(new CustomEvent('kiosk-keyboard-visibility', {
+      detail: { open: visible },
+    }));
+  }, [visible]);
+
+  useEffect(() => () => {
+    delete document.documentElement.dataset.kioskKeyboard;
+    window.dispatchEvent(new CustomEvent('kiosk-keyboard-visibility', {
+      detail: { open: false },
+    }));
+  }, []);
+
+  const press = useCallback((character) => {
+    const element = target;
+    if (!element) return;
+    element.focus({ preventScroll: true });
+
+    const start = element.selectionStart ?? element.value.length;
+    const end = element.selectionEnd ?? element.value.length;
+    const isNameField = ['firstName', 'lastName', 'company'].includes(element.name)
+      || ['firstName', 'lastName', 'company'].includes(element.id);
+    const startsWord = start === 0 || /[\s'-]/.test(element.value.charAt(start - 1));
+    const shouldCapitalise = character.length === 1 && isNameField && startsWord;
+    const finalCharacter = shifted || shouldCapitalise ? character.toUpperCase() : character;
+    const newValue = element.value.slice(0, start) + finalCharacter + element.value.slice(end);
+
+    setNativeValue(element, newValue);
+    const newPosition = start + finalCharacter.length;
+    setCaretPosition(element, newPosition);
     if (shifted) setShifted(false);
-  }, [target, shifted]);
+  }, [shifted, target]);
 
   const backspace = useCallback(() => {
-    const el = target;
-    if (!el) return;
-    el.focus();
-    if (el.isContentEditable) {
-      document.execCommand('delete');
-    } else {
-      const start = el.selectionStart ?? el.value.length;
-      const end = el.selectionEnd ?? el.value.length;
-      if (start === end && start > 0) {
-        const newVal = el.value.slice(0, start - 1) + el.value.slice(end);
-        const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set
-          || Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set;
-        if (setter) setter.call(el, newVal); else el.value = newVal;
-        el.dispatchEvent(new Event('input', { bubbles: true }));
-        el.setSelectionRange(start - 1, start - 1);
-      } else if (start !== end) {
-        const newVal = el.value.slice(0, start) + el.value.slice(end);
-        const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set
-          || Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set;
-        if (setter) setter.call(el, newVal); else el.value = newVal;
-        el.dispatchEvent(new Event('input', { bubbles: true }));
-        el.setSelectionRange(start, start);
-      }
-    }
+    const element = target;
+    if (!element) return;
+    element.focus({ preventScroll: true });
+
+    const start = element.selectionStart ?? element.value.length;
+    const end = element.selectionEnd ?? element.value.length;
+    if (start === end && start === 0) return;
+
+    const deleteFrom = start === end ? start - 1 : start;
+    const newValue = element.value.slice(0, deleteFrom) + element.value.slice(end);
+    setNativeValue(element, newValue);
+    setCaretPosition(element, deleteFrom);
   }, [target]);
 
-  const submitForm = useCallback(() => {
-    const el = target;
-    if (!el) return;
-    const form = el.closest('form');
-    if (form) {
-      const submitBtn = form.querySelector('[type="submit"]');
-      if (submitBtn) submitBtn.click();
+  const handlePrimaryAction = useCallback(() => {
+    const nextField = getNextField(target);
+    if (!nextField) {
+      hideKeyboard();
+      return;
     }
-    setVisible(false);
-  }, [target]);
 
-  if (!visible) return null;
+    setShifted(false);
+    setTab('alpha');
+    nextField.focus({ preventScroll: true });
+    window.setTimeout(() => {
+      nextField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 80);
+  }, [hideKeyboard, target]);
 
-  const alphaRows = ROWS.map(row => row.map(c => shifted ? c.toUpperCase() : c));
+  if (!visible || !target) return null;
 
-  // Key sizing: target 40vh total height, distributed across rows
-  const KEY_H = 'calc((40vh - 80px) / 5)';
-  const KEY_FONT = 'calc((40vh - 80px) / 8)';
+  const isEmailField = target.dataset.keyboardType === 'email'
+    || target.type === 'email'
+    || target.autocomplete === 'email';
+  const isCompanyField = target.name === 'company' || target.id === 'company';
+  const hasNextField = Boolean(getNextField(target));
+  const fieldLabel = target.dataset.keyboardLabel || target.getAttribute('aria-label') || 'Enter details';
 
   return (
     <div
       className="fixed bottom-0 left-0 right-0 z-[9999] select-none"
       style={{
-        background: '#1a1a1a',
-        borderTop: '2px solid #2a2a2a',
-        padding: '10px 8px 14px',
-        height: '40vh',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 4,
+        background: '#181818',
+        borderTop: '1px solid #363636',
+        boxShadow: '0 -12px 32px rgba(0,0,0,0.38)',
+        padding: '10px clamp(8px, 1.2vw, 18px) max(12px, env(safe-area-inset-bottom))',
+        height: KEYBOARD_HEIGHT,
+        touchAction: 'none',
       }}
-      onPointerDown={e => e.preventDefault()}
+      onPointerDown={(event) => event.preventDefault()}
+      role="group"
+      aria-label={`On-screen keyboard for ${fieldLabel}`}
     >
-      {/* Tab switcher + close */}
-      <div className="flex gap-2 px-1" style={{ flexShrink: 0 }}>
-        <button
-          onPointerDown={e => { e.preventDefault(); setTab('alpha'); }}
-          style={{
-            fontSize: KEY_FONT,
-            fontWeight: 700,
-            padding: '4px 16px',
-            borderRadius: 8,
-            border: 'none',
-            background: tab === 'alpha' ? '#AF231C' : 'transparent',
-            color: tab === 'alpha' ? '#fff' : 'rgba(255,255,255,0.4)',
-            cursor: 'pointer',
-          }}
-        >ABC</button>
-        <button
-          onPointerDown={e => { e.preventDefault(); setTab('numbers'); }}
-          style={{
-            fontSize: KEY_FONT,
-            fontWeight: 700,
-            padding: '4px 16px',
-            borderRadius: 8,
-            border: 'none',
-            background: tab === 'numbers' ? '#AF231C' : 'transparent',
-            color: tab === 'numbers' ? '#fff' : 'rgba(255,255,255,0.4)',
-            cursor: 'pointer',
-          }}
-        >123</button>
-        <div style={{ flex: 1 }} />
-        <button
-          onPointerDown={e => { e.preventDefault(); setVisible(false); setTarget(null); }}
-          style={{ fontSize: KEY_FONT, color: 'rgba(255,255,255,0.35)', border: 'none', background: 'none', cursor: 'pointer', padding: '4px 12px' }}
-        >✕</button>
-      </div>
+      <div className="mx-auto flex h-full w-full max-w-[1200px] flex-col gap-1.5">
+        <div className="flex min-h-10 items-center gap-2 px-1" style={{ flexShrink: 0 }}>
+          <span className="min-w-0 flex-1 truncate text-sm font-semibold text-white/65">
+            {fieldLabel}
+          </span>
+          <div className="flex rounded-lg bg-black/25 p-0.5" aria-label="Keyboard layout">
+            <LayoutButton active={tab === 'alpha'} label="ABC" onPress={() => setTab('alpha')} />
+            <LayoutButton active={tab === 'numbers'} label="123" onPress={() => setTab('numbers')} />
+          </div>
+          <button
+            type="button"
+            onPointerDown={(event) => { event.preventDefault(); hideKeyboard(); }}
+            className="flex min-h-10 min-w-12 items-center justify-center rounded-lg text-white/60 transition-colors active:bg-white/10 active:text-white"
+            aria-label="Hide keyboard"
+          >
+            <ChevronDown size={26} />
+          </button>
+        </div>
 
-      {tab === 'alpha' && (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {alphaRows.map((row, ri) => (
-            <div key={ri} style={{ display: 'flex', justifyContent: 'center', gap: 4, flex: 1 }}>
-              {ri === 2 && (
-                <Key label="⇧" onPress={() => setShifted(s => !s)} active={shifted} h={KEY_H} f={KEY_FONT} minW="calc(8vw)" />
+        {tab === 'alpha' ? (
+          <div className="flex min-h-0 flex-1 flex-col gap-1.5">
+            {ROWS.map((row, rowIndex) => (
+              <div
+                key={rowIndex}
+                className="flex min-h-0 flex-1 justify-center gap-1.5"
+                style={{ paddingInline: rowIndex === 1 ? '3.5%' : 0 }}
+              >
+                {rowIndex === 2 && (
+                  <Key
+                    label="⇧"
+                    ariaLabel="Shift"
+                    onPress={() => setShifted((current) => !current)}
+                    active={shifted}
+                    flex={1.25}
+                  />
+                )}
+                {row.map((character) => (
+                  <Key
+                    key={character}
+                    label={shifted ? character.toUpperCase() : character}
+                    onPress={() => press(character)}
+                  />
+                ))}
+                {rowIndex === 2 && (
+                  <Key
+                    label={<Delete size={26} />}
+                    ariaLabel="Delete"
+                    onPress={backspace}
+                    flex={1.25}
+                  />
+                )}
+              </div>
+            ))}
+
+            <div className="flex min-h-0 flex-1 justify-center gap-1.5">
+              {isEmailField ? (
+                <>
+                  <Key label="@" onPress={() => press('@')} flex={1.15} />
+                  <Key label="-" onPress={() => press('-')} />
+                  <Key label="_" onPress={() => press('_')} />
+                  <Key label="." onPress={() => press('.')} />
+                  <Key label=".com" onPress={() => press('.com')} flex={1.5} compact />
+                  <Key label=".co.uk" onPress={() => press('.co.uk')} flex={1.7} compact />
+                </>
+              ) : (
+                <>
+                  <Key label="'" ariaLabel="Apostrophe" onPress={() => press("'")} />
+                  <Key label="-" ariaLabel="Hyphen" onPress={() => press('-')} />
+                  {isCompanyField && <Key label="&" onPress={() => press('&')} />}
+                  <Key label="space" onPress={() => press(' ')} flex={4} muted compact />
+                  <Key label="." onPress={() => press('.')} />
+                </>
               )}
-              {row.map(c => (
-                <Key key={c} label={c} onPress={() => press(c)} h={KEY_H} f={KEY_FONT} />
-              ))}
-              {ri === 2 && (
-                <button
-                  onPointerDown={e => { e.preventDefault(); backspace(); }}
-                  style={{
-                    minWidth: 'calc(8vw)', height: KEY_H,
-                    background: '#2a2a2a', border: 'none', borderRadius: 8, color: 'rgba(255,255,255,0.7)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0,
-                  }}
-                >
-                  <Delete style={{ width: KEY_FONT, height: KEY_FONT }} />
-                </button>
-              )}
+              <PrimaryKey hasNextField={hasNextField} onPress={handlePrimaryAction} />
             </div>
-          ))}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 4, flex: 1 }}>
-            {isEmailField ? (
-              <>
-                <Key label="@" onPress={() => press('@')} h={KEY_H} f={KEY_FONT} minW="calc(10vw)" />
-                <Key label=".com" onPress={() => press('.com')} h={KEY_H} f={KEY_FONT} minW="calc(14vw)" />
-                <Key label="space" onPress={() => press(' ')} h={KEY_H} f={KEY_FONT} flex={1} />
-                <Key label="." onPress={() => press('.')} h={KEY_H} f={KEY_FONT} minW="calc(8vw)" />
-              </>
-            ) : (
-              <>
-                <Key label="," onPress={() => press(',')} h={KEY_H} f={KEY_FONT} minW="calc(8vw)" />
-                <Key label="space" onPress={() => press(' ')} h={KEY_H} f={KEY_FONT} flex={1} />
-                <Key label="." onPress={() => press('.')} h={KEY_H} f={KEY_FONT} minW="calc(8vw)" />
-              </>
-            )}
-            <button
-              onPointerDown={e => { e.preventDefault(); submitForm(); }}
-              style={{
-                minWidth: 'calc(14vw)', height: KEY_H,
-                background: '#AF231C', border: 'none', borderRadius: 8,
-                color: '#fff', fontWeight: 700, fontSize: KEY_FONT,
-                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}
-            >Go ↵</button>
           </div>
-        </div>
-      )}
-
-      {tab === 'numbers' && (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 4, flex: 1 }}>
-            {NUMBERS.map(c => <Key key={c} label={c} onPress={() => press(c)} h={KEY_H} f={KEY_FONT} />)}
+        ) : (
+          <div className="flex min-h-0 flex-1 flex-col gap-1.5">
+            <div className="flex min-h-0 flex-1 justify-center gap-1.5">
+              {NUMBERS.map((character) => (
+                <Key key={character} label={character} onPress={() => press(character)} />
+              ))}
+            </div>
+            <div className="flex min-h-0 flex-1 justify-center gap-1.5">
+              {SYMBOLS.map((character) => (
+                <Key key={character} label={character} onPress={() => press(character)} />
+              ))}
+            </div>
+            <div className="flex min-h-0 flex-1 justify-center gap-1.5">
+              <Key
+                label={<Delete size={28} />}
+                ariaLabel="Delete"
+                onPress={backspace}
+                flex={1.4}
+              />
+              {!isEmailField && <Key label="space" onPress={() => press(' ')} flex={4} muted compact />}
+              <PrimaryKey hasNextField={hasNextField} onPress={handlePrimaryAction} />
+            </div>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 4, flex: 1 }}>
-            {SYMBOLS.map(c => <Key key={c} label={c} onPress={() => press(c)} h={KEY_H} f={KEY_FONT} />)}
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 4, flex: 1 }}>
-            <button
-              onPointerDown={e => { e.preventDefault(); backspace(); }}
-              style={{
-                minWidth: 'calc(12vw)', height: KEY_H,
-                background: '#2a2a2a', border: 'none', borderRadius: 8, color: 'rgba(255,255,255,0.7)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-              }}
-            >
-              <Delete style={{ width: KEY_FONT, height: KEY_FONT }} />
-            </button>
-            <Key label="space" onPress={() => press(' ')} h={KEY_H} f={KEY_FONT} flex={1} />
-            <button
-              onPointerDown={e => { e.preventDefault(); submitForm(); }}
-              style={{
-                minWidth: 'calc(14vw)', height: KEY_H,
-                background: '#AF231C', border: 'none', borderRadius: 8,
-                color: '#fff', fontWeight: 700, fontSize: KEY_FONT,
-                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}
-            >Go ↵</button>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
 
-function Key({ label, onPress, h, f, minW = null, flex = null, active = false }) {
+function LayoutButton({ active, label, onPress }) {
   return (
     <button
-      onPointerDown={e => { e.preventDefault(); onPress(); }}
+      type="button"
+      onPointerDown={(event) => { event.preventDefault(); onPress(); }}
+      className="min-h-9 min-w-14 rounded-md px-3 text-sm font-bold transition-colors"
       style={{
-        minWidth: minW || 'calc(8.5vw)',
-        flex: flex || undefined,
-        height: h,
-        background: active ? '#AF231C' : '#2a2a2a',
-        border: 'none',
-        borderRadius: 8,
-        color: label === 'space' ? '#666' : '#fff',
-        fontWeight: 600,
-        fontSize: label === 'space' ? `calc(${f} * 0.6)` : f,
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        transition: 'background 0.08s',
+        background: active ? '#AF231C' : 'transparent',
+        color: active ? '#fff' : 'rgba(255,255,255,0.48)',
+      }}
+      aria-pressed={active}
+    >
+      {label}
+    </button>
+  );
+}
+
+function PrimaryKey({ hasNextField, onPress }) {
+  return (
+    <Key
+      label={(
+        <span className="flex items-center justify-center gap-1.5">
+          {hasNextField ? 'Next' : 'Done'}
+          {hasNextField ? <ChevronRight size={24} /> : <Check size={22} />}
+        </span>
+      )}
+      ariaLabel={hasNextField ? 'Next field' : 'Done typing'}
+      onPress={onPress}
+      flex={2.2}
+      primary
+      compact
+    />
+  );
+}
+
+function Key({
+  label,
+  onPress,
+  ariaLabel = null,
+  flex = 1,
+  active = false,
+  primary = false,
+  muted = false,
+  compact = false,
+}) {
+  return (
+    <button
+      type="button"
+      onPointerDown={(event) => { event.preventDefault(); onPress(); }}
+      className="flex min-h-0 min-w-0 items-center justify-center rounded-[10px] border font-semibold transition-transform active:scale-[0.97]"
+      style={{
+        flex,
+        background: primary || active ? '#AF231C' : '#292929',
+        borderColor: primary || active ? '#c83a32' : '#383838',
+        boxShadow: primary || active ? '0 2px 0 #78140f' : '0 2px 0 #101010',
+        color: muted ? 'rgba(255,255,255,0.5)' : '#fff',
+        fontSize: compact ? 'clamp(14px, 1.7vw, 21px)' : KEY_FONT,
         WebkitTapHighlightColor: 'transparent',
         touchAction: 'manipulation',
-        flexShrink: 0,
       }}
+      aria-label={ariaLabel || (typeof label === 'string' ? label : undefined)}
+      aria-pressed={active || undefined}
     >
-      {label === 'space' ? 'space' : label}
+      {label}
     </button>
   );
 }

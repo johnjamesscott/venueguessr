@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 
 const EMPTY_ERRORS = { firstName: null, lastName: null, email: null, form: null };
@@ -7,6 +7,15 @@ export default function ContactForm({ onSubmit, onSkip }) {
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', company: '' });
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState(EMPTY_ERRORS);
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+
+  useEffect(() => {
+    const handleKeyboardVisibility = (event) => {
+      setKeyboardOpen(event.detail?.open === true);
+    };
+    window.addEventListener('kiosk-keyboard-visibility', handleKeyboardVisibility);
+    return () => window.removeEventListener('kiosk-keyboard-visibility', handleKeyboardVisibility);
+  }, []);
 
   const validate = () => {
     const errs = { ...EMPTY_ERRORS };
@@ -41,7 +50,13 @@ export default function ContactForm({ onSubmit, onSkip }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+    <div
+      className={`fixed inset-0 z-50 flex justify-center overflow-y-auto bg-black/80 p-4 backdrop-blur-sm transition-[padding] duration-200 ${keyboardOpen ? 'items-start' : 'items-center'}`}
+      style={{
+        paddingBottom: keyboardOpen ? 'calc(clamp(300px, 38dvh, 430px) + 16px)' : undefined,
+        overscrollBehavior: 'contain',
+      }}
+    >
       <div className="w-full max-w-md bg-hb-surface rounded-hb-lg border border-hb-border p-6 md:p-8 fade-in">
         <div className="flex items-start justify-between mb-6">
           <div>
@@ -63,34 +78,34 @@ export default function ContactForm({ onSubmit, onSkip }) {
           )}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-1.5">First name <span className="text-hb-red">*</span></label>
-              <input type="text" name="firstName" value={form.firstName} onChange={e => handleChange('firstName', e.target.value)}
+              <label htmlFor="firstName" className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-1.5">First name <span className="text-hb-red">*</span></label>
+              <input id="firstName" type="text" name="firstName" value={form.firstName} onChange={e => handleChange('firstName', e.target.value)}
                 className={`w-full bg-hb-surface-2 border rounded-hb-md px-3 py-2.5 text-white text-sm placeholder-hb-text-muted focus:outline-none focus:border-hb-red transition-colors ${errors.firstName ? 'border-red-500' : 'border-hb-border'}`}
-                placeholder="Jane" />
+                placeholder="Jane" autoComplete="off" inputMode="none" enterKeyHint="next" data-kiosk-keyboard="true" data-keyboard-label="First name" aria-invalid={Boolean(errors.firstName)} />
               {errors.firstName && <p className="text-red-400 text-xs mt-1">{errors.firstName}</p>}
             </div>
             <div>
-              <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-1.5">Last name <span className="text-hb-red">*</span></label>
-              <input type="text" name="lastName" value={form.lastName} onChange={e => handleChange('lastName', e.target.value)}
+              <label htmlFor="lastName" className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-1.5">Last name <span className="text-hb-red">*</span></label>
+              <input id="lastName" type="text" name="lastName" value={form.lastName} onChange={e => handleChange('lastName', e.target.value)}
                 className={`w-full bg-hb-surface-2 border rounded-hb-md px-3 py-2.5 text-white text-sm placeholder-hb-text-muted focus:outline-none focus:border-hb-red transition-colors ${errors.lastName ? 'border-red-500' : 'border-hb-border'}`}
-                placeholder="Smith" />
+                placeholder="Smith" autoComplete="off" inputMode="none" enterKeyHint="next" data-kiosk-keyboard="true" data-keyboard-label="Last name" aria-invalid={Boolean(errors.lastName)} />
               {errors.lastName && <p className="text-red-400 text-xs mt-1">{errors.lastName}</p>}
             </div>
           </div>
 
           <div>
-            <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-1.5">Business email <span className="text-hb-red">*</span></label>
-            <input type="email" value={form.email} onChange={e => handleChange('email', e.target.value)}
+            <label htmlFor="email" className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-1.5">Business email <span className="text-hb-red">*</span></label>
+            <input id="email" name="email" type="email" value={form.email} onChange={e => handleChange('email', e.target.value)}
               className={`w-full bg-hb-surface-2 border rounded-hb-md px-3 py-2.5 text-white text-sm placeholder-hb-text-muted focus:outline-none focus:border-hb-red transition-colors ${errors.email ? 'border-red-500' : 'border-hb-border'}`}
-              placeholder="jane@company.com" autoComplete="off" />
+              placeholder="jane@company.com" autoComplete="off" inputMode="none" enterKeyHint="next" data-kiosk-keyboard="true" data-keyboard-type="email" data-keyboard-label="Business email" aria-invalid={Boolean(errors.email)} />
             {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email}</p>}
           </div>
 
           <div>
-            <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-1.5">Company</label>
-            <input type="text" name="company" value={form.company} onChange={e => handleChange('company', e.target.value)}
+            <label htmlFor="company" className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-1.5">Company</label>
+            <input id="company" type="text" name="company" value={form.company} onChange={e => handleChange('company', e.target.value)}
               className="w-full bg-hb-surface-2 border border-hb-border rounded-hb-md px-3 py-2.5 text-white text-sm placeholder-hb-text-muted focus:outline-none focus:border-hb-red transition-colors"
-              placeholder="Acme Events Ltd" />
+              placeholder="Acme Events Ltd" autoComplete="off" inputMode="none" enterKeyHint="done" data-kiosk-keyboard="true" data-keyboard-label="Company" />
           </div>
 
           <button type="submit" disabled={submitting}
