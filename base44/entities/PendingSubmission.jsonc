@@ -9,10 +9,6 @@
     "competition_id": {
       "type": "string"
     },
-    "game_session_id": {
-      "type": "string",
-      "description": "Verified game session used to calculate this score"
-    },
     "total_score": {
       "type": "number"
     },

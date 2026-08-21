@@ -79,7 +79,6 @@ export default function Game() {
   const [gameIcpBoosted, setGameIcpBoosted] = useState(false);
   const [gameSettings, setGameSettings] = useState(DEFAULT_GAME_SETTINGS);
   const [gameCompetitionId, setGameCompetitionId] = useState(null);
-  const [gameSessionToken, setGameSessionToken] = useState(null);
   const [gameSessionId, setGameSessionId] = useState(0);
   const [startMode, setStartMode] = useState(null);
   const [startError, setStartError] = useState('');
@@ -156,7 +155,6 @@ export default function Game() {
     setGameIcpBoosted(false);
     setGameSettings(activeSettings);
     setGameCompetitionId(null);
-    setGameSessionToken(null);
     setGameSessionId(0);
     setStartMode(null);
     setStartError('');
@@ -184,10 +182,7 @@ export default function Game() {
 
     try {
       const response = await withTimeout(
-        base44.functions.invoke(
-          'getRandomVenues',
-          demoMode ? { demo: true } : { icp_boosted: icpBoostArmed },
-        ),
+        base44.functions.invoke('getRandomVenues', demoMode ? { demo: true } : {}),
         VENUE_REQUEST_TIMEOUT_MS,
         'The venue request took too long',
       );
@@ -203,14 +198,10 @@ export default function Game() {
         }];
       }
       if (venues.length === 0) throw new Error('No active venues are available');
-      if (!demoMode && !response?.data?.gameSessionToken) {
-        throw new Error('No verified game session was returned');
-      }
 
       const playableCount = demoMode ? 1 : settings.roundCount;
       setGameSettings(settings);
       setGameCompetitionId(response?.data?.competitionId || activeCompetition?.id || null);
-      setGameSessionToken(response?.data?.gameSessionToken || null);
       setGameSessionId(requestId);
       setShuffledVenues(venues.slice(0, playableCount));
       setVenuePool(demoMode ? [] : venues.slice(playableCount));
@@ -235,7 +226,6 @@ export default function Game() {
         const fallbackSettings = normalizeGameSettings(activeCompetition);
         setGameSettings(fallbackSettings);
         setGameCompetitionId(activeCompetition?.id || null);
-        setGameSessionToken(null);
         setGameSessionId(requestId);
         setShuffledVenues([{
           id: 'demo', venueName: 'Natural History Museum', spaceName: 'Cromwell Road',
@@ -473,18 +463,24 @@ export default function Game() {
 
   if (gameState === GAME_STATES.CONTACT) {
     const totalScore = results.reduce((sum, r) => sum + (r.score || 0), 0);
+    const withDist = results.filter(r => r.distance);
+    const avgKm = withDist.length > 0
+      ? withDist.reduce((s, r) => s + (r.distance?.km || 0), 0) / withDist.length : 0;
     return (
       <div className="min-h-screen bg-hb-bg">
         <OfflineBanner isOnline={isOnline} />
         <GameHeader />
         <QrContactScreen
           totalScore={totalScore}
-          gameSessionToken={gameSessionToken}
+          competitionId={gameCompetitionId}
           roundResults={results.map(r => ({
-            venue_id: r.venueId,
-            guess_lat: r.guess?.lat ?? null,
-            guess_lng: r.guess?.lng ?? null,
+            venue_name: r.venueName,
+            city: r.city,
+            score: r.baseScore ?? r.score,
+            distance_km: r.distance?.km || 0,
           }))}
+          avgDistanceKm={Math.round(avgKm)}
+          icpBoosted={gameIcpBoosted}
           onManualSubmit={handleContactSubmit}
           onSubmissionComplete={handleRemoteContactComplete}
           onSkip={handleContactSkip}

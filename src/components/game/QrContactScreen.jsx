@@ -16,8 +16,10 @@ const getSubmissionErrorMessage = (requestError) => {
 
 export default function QrContactScreen({
   totalScore,
-  gameSessionToken,
+  competitionId,
   roundResults,
+  avgDistanceKm,
+  icpBoosted,
   onManualSubmit,
   onSubmissionComplete,
   onSkip,
@@ -31,8 +33,11 @@ export default function QrContactScreen({
   const startedAtRef = useRef(performance.now());
   const pendingPromiseRef = useRef(null);
   const submissionPayloadRef = useRef({
-    game_session_token: gameSessionToken || null,
+    competition_id: competitionId || null,
+    total_score: totalScore || 0,
     round_results: roundResults || [],
+    avg_distance_km: avgDistanceKm || 0,
+    icp_boosted: icpBoosted === true,
   });
 
   const createPendingSubmission = useCallback(() => {
