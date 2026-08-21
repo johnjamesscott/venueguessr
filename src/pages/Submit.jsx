@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { CheckCircle2, Trophy, ArrowRight } from 'lucide-react';
+import { trackEvent } from '@/utils/analytics';
 
 const MEDAL = ['🥇', '🥈', '🥉'];
 const EMPTY_ERRORS = { form: '', firstName: '', lastName: '', email: '' };
@@ -24,11 +25,15 @@ export default function Submit() {
       try {
         const res = await base44.functions.invoke('getPendingSubmission', { token: t });
         const data = res?.data;
-        if (!data || data.error) { setLoadError(data?.error || 'Score not found.'); setLoading(false); return; }
+        if (!data || data.error) {
+          trackEvent('score_capture_failed', { method: 'mobile', stage: 'load' });
+          setLoadError(data?.error || 'Score not found.'); setLoading(false); return;
+        }
         setPending(data);
         if (data.status === 'completed') { setResult({ alreadySubmitted: true }); }
         setLoading(false);
-      } catch (e) {
+      } catch {
+        trackEvent('score_capture_failed', { method: 'mobile', stage: 'load' });
         setLoadError('Could not load your score.'); setLoading(false);
       }
     })();
@@ -47,7 +52,11 @@ export default function Submit() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const errs = validate();
-    if (Object.values(errs).some(Boolean)) { setErrors(errs); return; }
+    if (Object.values(errs).some(Boolean)) {
+      trackEvent('score_capture_failed', { method: 'mobile', stage: 'validation' });
+      setErrors(errs);
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await base44.functions.invoke('finalizePendingSubmission', {
@@ -59,6 +68,7 @@ export default function Submit() {
       });
       const data = res?.data;
       if (!data || data.error) {
+        trackEvent('score_capture_failed', { method: 'mobile', stage: 'save' });
         setErrors({ ...EMPTY_ERRORS, form: data?.error || 'Submission failed. Please try again.' });
         setSubmitting(false);
         return;
@@ -69,7 +79,9 @@ export default function Submit() {
         competition_name: data.competition_name,
         leaderboard: data.leaderboard || [],
       });
-    } catch (err) {
+      trackEvent('score_capture_completed', { method: 'mobile' });
+    } catch {
+      trackEvent('score_capture_failed', { method: 'mobile', stage: 'save' });
       setErrors({ ...EMPTY_ERRORS, form: 'Submission failed. Please try again.' });
     }
     setSubmitting(false);

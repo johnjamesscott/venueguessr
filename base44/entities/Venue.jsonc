@@ -46,6 +46,26 @@
     "is_demo": {
       "type": "boolean",
       "default": false
+    },
+    "health_status": {
+      "type": "string",
+      "enum": [
+        "unknown",
+        "healthy",
+        "unhealthy"
+      ],
+      "default": "unknown",
+      "description": "Latest automated Matterport availability result"
+    },
+    "last_health_check_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "last_health_check_ms": {
+      "type": "number"
+    },
+    "health_message": {
+      "type": "string"
     }
   },
   "required": [

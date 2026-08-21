@@ -1,39 +1,50 @@
-**Welcome to your Base44 project** 
+# VenueGuessr
 
-**About**
+VenueGuessr is a kiosk game built with Base44. Players explore a 3D venue tour, place a pin on the map, then save their score by scanning a QR code or using the kiosk form.
 
-View and Edit  your app on [Base44.com](http://Base44.com) 
+## Local setup
 
-This project contains everything you need to run your app locally.
+1. Install dependencies with `npm install`.
+2. Create `.env.local` with `VITE_BASE44_APP_ID` and `VITE_BASE44_APP_BASE_URL`.
+3. Start the local app with `npm run dev`.
 
-**Edit the code in your local development environment**
+Run the full local quality check before opening a pull request:
 
-Any change pushed to the repo will also be reflected in the Base44 Builder.
-
-**Prerequisites:** 
-
-1. Clone the repository using the project's Git URL 
-2. Navigate to the project directory
-3. Install dependencies: `npm install`
-4. Create an `.env.local` file and set the right environment variables
-
-```
-VITE_BASE44_APP_ID=your_app_id
-VITE_BASE44_APP_BASE_URL=your_backend_url
-
-e.g.
-VITE_BASE44_APP_ID=cbef744a8545c389ef439ea6
-VITE_BASE44_APP_BASE_URL=https://my-to-do-list-81bfaad7.base44.app
+```sh
+npm test
+npm run typecheck
+npm run lint
+npm run build
 ```
 
-Run the app: `npm run dev`
+## How the live game works
 
-**Publish your changes**
+- The public kiosk and mobile score form do not require sign-in.
+- Venue records, leads, leaderboard administration and competition settings remain admin-only.
+- A short-lived server session fixes the venue pool, round count and ICP setting when a game starts.
+- The server recalculates every score from the submitted map coordinates and venue coordinates. Client-submitted score totals are not trusted.
+- QR codes are generated in the browser, so private score links are not sent to a QR-image provider.
+- The next Matterport tour starts loading invisibly during the current round. This is intentional for event Wi-Fi reliability.
+- Tours marked unhealthy by the admin health check are held out of new games until they pass again.
 
-Open [Base44.com](http://Base44.com) and click on Publish.
+## Admin checks before an event
 
-**Docs & Support**
+1. Open **Admin → Venues** and run **Check active tours**.
+2. Confirm there are enough healthy active venues for the configured round count, plus spares.
+3. Play a full normal game and a boosted game on the actual kiosk connection.
+4. Scan the QR code on a phone, submit a test business address and confirm the kiosk advances.
+5. Confirm the score, per-round multiplier and leaderboard rank are correct.
+6. Delete any test lead and leaderboard data created during the check.
 
-Documentation: [https://docs.base44.com/Integrations/Using-GitHub](https://docs.base44.com/Integrations/Using-GitHub)
+## Release checklist
 
-Support: [https://app.base44.com/support](https://app.base44.com/support)
+Merging GitHub changes and publishing the Base44 app are separate steps. After the pull request is reviewed:
+
+1. Merge the pull request.
+2. Confirm the Base44 editor has synced the merged commit.
+3. Publish in Base44.
+4. Run Base44's security scan and review any warnings about public functions, secrets or entity permissions.
+5. Test the live kiosk journey from start through score submission.
+6. Check the live admin venue-health action and confirm no real lead data is visible publicly.
+
+Do not put API keys in frontend code or committed environment files. Lead names and emails should only be handled by the private Base44 entities and server-side functions that need them.

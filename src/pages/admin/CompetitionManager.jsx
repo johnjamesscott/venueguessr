@@ -126,10 +126,10 @@ export default function CompetitionManager() {
 
   const activate = async (comp) => {
     await runAction(comp.id, async () => {
-      const active = competitions.filter(c => c.active);
-      for (const c of active) {
-        await base44.entities.Competition.update(c.id, { active: false });
-      }
+      await base44.entities.Competition.updateMany(
+        { active: true },
+        { $set: { active: false } },
+      );
       await base44.entities.Competition.update(comp.id, { active: true, archived: false });
     });
   };

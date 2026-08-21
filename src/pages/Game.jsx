@@ -6,6 +6,7 @@ import { EMPTY_LEADERBOARD, usePublicLeaderboard } from '@/hooks/usePublicLeader
 import { useKioskInactivity } from '@/hooks/useKioskInactivity';
 import { DEFAULT_GAME_SETTINGS, normalizeGameSettings } from '@/utils/gameSettings';
 import { withTimeout } from '@/utils/withTimeout';
+import { trackEvent } from '@/utils/analytics';
 import {
   unlockAudio, playPinSound, playLockSound,
   playCelebrationSound, playErrorSound,
@@ -15,13 +16,13 @@ import SplashScreen from '@/components/game/SplashScreen/SplashScreen';
 import GameHeader from '@/components/game/GameHeader';
 import MatterportViewer from '@/components/game/MatterportViewer';
 import ArcadeMapControls from '@/components/game/ArcadeMapControls';
-import QrContactScreen from '@/components/game/QrContactScreen';
 import GameSummary from '@/components/game/GameSummary';
 import PreRoundCountdown from '@/components/game/PreRoundCountdown';
 import CelebrationOverlay from '@/components/game/CelebrationOverlay';
 
 const GuessMap = lazy(() => import('@/components/game/GuessMap'));
 const RoundResult = lazy(() => import('@/components/game/RoundResult'));
+const QrContactScreen = lazy(() => import('@/components/game/QrContactScreen'));
 
 const GOOD_SCORE_THRESHOLD = 2000;
 const VENUE_REQUEST_TIMEOUT_MS = 12_000;
@@ -78,6 +79,7 @@ export default function Game() {
   const [gameIcpBoosted, setGameIcpBoosted] = useState(false);
   const [gameSettings, setGameSettings] = useState(DEFAULT_GAME_SETTINGS);
   const [gameCompetitionId, setGameCompetitionId] = useState(null);
+  const [gameSessionToken, setGameSessionToken] = useState(null);
   const [gameSessionId, setGameSessionId] = useState(0);
   const [startMode, setStartMode] = useState(null);
   const [startError, setStartError] = useState('');
@@ -154,6 +156,7 @@ export default function Game() {
     setGameIcpBoosted(false);
     setGameSettings(activeSettings);
     setGameCompetitionId(null);
+    setGameSessionToken(null);
     setGameSessionId(0);
     setStartMode(null);
     setStartError('');
@@ -177,10 +180,14 @@ export default function Game() {
     setStartMode(demoMode ? 'demo' : 'game');
     setStartError('');
     unlockAudio();
+    const startedAt = performance.now();
 
     try {
       const response = await withTimeout(
-        base44.functions.invoke('getRandomVenues', demoMode ? { demo: true } : {}),
+        base44.functions.invoke(
+          'getRandomVenues',
+          demoMode ? { demo: true } : { icp_boosted: icpBoostArmed },
+        ),
         VENUE_REQUEST_TIMEOUT_MS,
         'The venue request took too long',
       );
@@ -196,10 +203,14 @@ export default function Game() {
         }];
       }
       if (venues.length === 0) throw new Error('No active venues are available');
+      if (!demoMode && !response?.data?.gameSessionToken) {
+        throw new Error('No verified game session was returned');
+      }
 
       const playableCount = demoMode ? 1 : settings.roundCount;
       setGameSettings(settings);
       setGameCompetitionId(response?.data?.competitionId || activeCompetition?.id || null);
+      setGameSessionToken(response?.data?.gameSessionToken || null);
       setGameSessionId(requestId);
       setShuffledVenues(venues.slice(0, playableCount));
       setVenuePool(demoMode ? [] : venues.slice(playableCount));
@@ -212,12 +223,19 @@ export default function Game() {
       resetRoundState(settings.roundSeconds);
       activeGameSessionRef.current = requestId;
       setGameState(GAME_STATES.PLAYING);
+      trackEvent('game_started', {
+        demo: demoMode,
+        icp_boosted: demoMode ? false : icpBoostArmed,
+        round_count: playableCount,
+        load_ms: Math.round(performance.now() - startedAt),
+      });
     } catch (error) {
       if (startRequestIdRef.current !== requestId) return;
       if (demoMode && navigator.onLine) {
         const fallbackSettings = normalizeGameSettings(activeCompetition);
         setGameSettings(fallbackSettings);
         setGameCompetitionId(activeCompetition?.id || null);
+        setGameSessionToken(null);
         setGameSessionId(requestId);
         setShuffledVenues([{
           id: 'demo', venueName: 'Natural History Museum', spaceName: 'Cromwell Road',
@@ -234,9 +252,22 @@ export default function Game() {
         resetRoundState(fallbackSettings.roundSeconds);
         activeGameSessionRef.current = requestId;
         setGameState(GAME_STATES.PLAYING);
+        trackEvent('game_started', {
+          demo: true,
+          icp_boosted: false,
+          round_count: 1,
+          fallback: true,
+          load_ms: Math.round(performance.now() - startedAt),
+        });
         return;
       }
       setStartError(getStartErrorMessage(error));
+      trackEvent('game_start_failed', {
+        demo: demoMode,
+        online: navigator.onLine,
+        timed_out: String(error?.message || '').includes('took too long'),
+        load_ms: Math.round(performance.now() - startedAt),
+      });
     } finally {
       if (startRequestIdRef.current === requestId) {
         startInFlightRef.current = false;
@@ -253,6 +284,11 @@ export default function Game() {
     setPreRoundCountdown(false);
     setTimeRemaining(gameSettings.roundSeconds);
     setVenuePool(pool => {
+      trackEvent('venue_tour_failed', {
+        round_number: currentRoundIndex + 1,
+        spare_available: pool.length > 0,
+        online: navigator.onLine,
+      });
       if (pool.length === 0) {
         setVenueUnavailable(true);
         return pool;
@@ -325,12 +361,21 @@ export default function Game() {
 
   const handleNextRound = useCallback(() => {
     const venue = shuffledVenues[currentRoundIndex];
-    setResults(prev => [...prev, {
+    const nextResults = [...results, {
       venueId: venue.id, venueName: venue.venueName, city: venue.city,
       guess: currentGuess, distance: currentDistance,
       baseScore: currentBaseScore, score: currentScore,
-    }]);
+    }];
+    setResults(nextResults);
     const isLastRound = currentRoundIndex >= shuffledVenues.length - 1;
+    if (isLastRound) {
+      trackEvent('game_completed', {
+        demo: isDemo,
+        icp_boosted: gameIcpBoosted,
+        round_count: nextResults.length,
+        total_score: nextResults.reduce((sum, result) => sum + (result.score || 0), 0),
+      });
+    }
     if (isLastRound && isDemo) {
       setGameState(GAME_STATES.SUMMARY);
     } else if (isLastRound) {
@@ -349,7 +394,7 @@ export default function Game() {
       setViewerRetryKey(0);
       setGameState(GAME_STATES.PLAYING);
     }
-  }, [currentRoundIndex, shuffledVenues, currentGuess, currentDistance, currentBaseScore, currentScore, isDemo, gameSettings.roundSeconds]);
+  }, [currentRoundIndex, shuffledVenues, results, currentGuess, currentDistance, currentBaseScore, currentScore, isDemo, gameIcpBoosted, gameSettings.roundSeconds]);
 
   const handlePlayAgain = useCallback(() => {
     resetKiosk();
@@ -368,8 +413,12 @@ export default function Game() {
   }, [gameSessionId]);
 
   const handleContactSkip = useCallback(() => {
+    trackEvent('score_capture_skipped', {
+      round_count: results.length,
+      icp_boosted: gameIcpBoosted,
+    });
     setGameState(GAME_STATES.SUMMARY);
-  }, []);
+  }, [gameIcpBoosted, results.length]);
 
   const mapRef = useRef(null);
 
@@ -424,24 +473,18 @@ export default function Game() {
 
   if (gameState === GAME_STATES.CONTACT) {
     const totalScore = results.reduce((sum, r) => sum + (r.score || 0), 0);
-    const withDist = results.filter(r => r.distance);
-    const avgKm = withDist.length > 0
-      ? withDist.reduce((s, r) => s + (r.distance?.km || 0), 0) / withDist.length : 0;
     return (
       <div className="min-h-screen bg-hb-bg">
         <OfflineBanner isOnline={isOnline} />
         <GameHeader />
         <QrContactScreen
           totalScore={totalScore}
-          competitionId={gameCompetitionId}
+          gameSessionToken={gameSessionToken}
           roundResults={results.map(r => ({
-            venue_name: r.venueName,
-            city: r.city,
-            score: r.baseScore ?? r.score,
-            distance_km: r.distance?.km || 0,
+            venue_id: r.venueId,
+            guess_lat: r.guess?.lat ?? null,
+            guess_lng: r.guess?.lng ?? null,
           }))}
-          avgDistanceKm={Math.round(avgKm)}
-          icpBoosted={gameIcpBoosted}
           onManualSubmit={handleContactSubmit}
           onSubmissionComplete={handleRemoteContactComplete}
           onSkip={handleContactSkip}

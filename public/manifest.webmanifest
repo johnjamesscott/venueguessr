@@ -1,0 +1,17 @@
+{
+  "name": "VenueGuessr",
+  "short_name": "VenueGuessr",
+  "description": "Explore 3D venue tours and guess where each venue is located.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#121212",
+  "theme_color": "#121212",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

@@ -12,7 +12,7 @@ const SYMBOLS = ['@','.','_','-','#','!','&','+','(',')','/'];
 
 export default function VirtualKeyboard() {
   const [visible, setVisible] = useState(false);
-  const [target, setTarget] = useState(null);
+  const [target, setTarget] = useState(/** @type {any} */ (null));
   const [shifted, setShifted] = useState(false);
   const [tab, setTab] = useState('alpha');
 
@@ -30,7 +30,7 @@ export default function VirtualKeyboard() {
     };
     const onBlur = () => {
       setTimeout(() => {
-        const active = document.activeElement;
+        const active = /** @type {HTMLElement | null} */ (document.activeElement);
         if (!active || (active.tagName !== 'INPUT' && active.tagName !== 'TEXTAREA' && !active.isContentEditable)) {
           setVisible(false);
           setTarget(null);
@@ -258,7 +258,7 @@ export default function VirtualKeyboard() {
   );
 }
 
-function Key({ label, onPress, h, f, minW, flex, active }) {
+function Key({ label, onPress, h, f, minW = null, flex = null, active = false }) {
   return (
     <button
       onPointerDown={e => { e.preventDefault(); onPress(); }}

@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Smartphone, Pencil } from 'lucide-react';
+import QRCode from 'qrcode';
 import ContactForm from './ContactForm';
+import { trackEvent } from '@/utils/analytics';
 
 const getSubmissionErrorMessage = (requestError) => {
   const status = requestError?.response?.status || requestError?.status;
@@ -14,10 +16,8 @@ const getSubmissionErrorMessage = (requestError) => {
 
 export default function QrContactScreen({
   totalScore,
-  competitionId,
+  gameSessionToken,
   roundResults,
-  avgDistanceKm,
-  icpBoosted,
   onManualSubmit,
   onSubmissionComplete,
   onSkip,
@@ -26,14 +26,13 @@ export default function QrContactScreen({
   const [mode, setMode] = useState('qr');
   const [creating, setCreating] = useState(true);
   const [error, setError] = useState(null);
+  const [qrSrc, setQrSrc] = useState('');
   const completedRef = useRef(false);
+  const startedAtRef = useRef(performance.now());
   const pendingPromiseRef = useRef(null);
   const submissionPayloadRef = useRef({
-    competition_id: competitionId || null,
-    total_score: totalScore || 0,
+    game_session_token: gameSessionToken || null,
     round_results: roundResults || [],
-    avg_distance_km: avgDistanceKm || 0,
-    icp_boosted: icpBoosted === true,
   });
 
   const createPendingSubmission = useCallback(() => {
@@ -54,10 +53,25 @@ export default function QrContactScreen({
     return pendingPromiseRef.current;
   }, []);
 
+  const prepareQrCode = useCallback(async () => {
+    const data = await createPendingSubmission();
+    const submitUrl = `${window.location.origin}/submit?token=${data.token}`;
+    const dataUrl = await QRCode.toDataURL(submitUrl, {
+      width: 320,
+      margin: 2,
+      errorCorrectionLevel: 'M',
+      color: { dark: '#121212', light: '#ffffff' },
+    });
+    setQrSrc(dataUrl);
+    trackEvent('score_qr_ready', {
+      duration_ms: Math.round(performance.now() - startedAtRef.current),
+    });
+  }, [createPendingSubmission]);
+
   // Create the pending submission (with a random token) once on mount.
   useEffect(() => {
     let cancelled = false;
-    createPendingSubmission()
+    prepareQrCode()
       .then(() => {
         if (!cancelled) setCreating(false);
       })
@@ -65,22 +79,30 @@ export default function QrContactScreen({
         if (!cancelled) {
           setError(getSubmissionErrorMessage(requestError));
           setCreating(false);
+          trackEvent('score_qr_failed', {
+            online: navigator.onLine,
+            rate_limited: requestError?.response?.status === 429,
+          });
         }
       });
     return () => { cancelled = true; };
-  }, [createPendingSubmission]);
+  }, [prepareQrCode]);
 
   const retryPendingSubmission = useCallback(() => {
     if (creating) return;
     setCreating(true);
     setError(null);
-    createPendingSubmission()
+    prepareQrCode()
       .then(() => setCreating(false))
       .catch((requestError) => {
         setError(getSubmissionErrorMessage(requestError));
         setCreating(false);
+        trackEvent('score_qr_failed', {
+          online: navigator.onLine,
+          rate_limited: requestError?.response?.status === 429,
+        });
       });
-  }, [createPendingSubmission, creating]);
+  }, [creating, prepareQrCode]);
 
   // Poll the token-specific public function. PendingSubmission records themselves
   // remain private, so the kiosk never subscribes to other players' submissions.
@@ -95,6 +117,7 @@ export default function QrContactScreen({
         const data = response?.data;
         if (active && data?.status === 'completed' && !completedRef.current) {
           completedRef.current = true;
+          trackEvent('score_capture_confirmed_on_kiosk', { method: 'mobile' });
           onSubmissionComplete?.(data);
           return;
         }
@@ -124,15 +147,9 @@ export default function QrContactScreen({
     if (!data?.success) throw new Error(data?.error || 'Submission failed');
 
     completedRef.current = true;
+    trackEvent('score_capture_completed', { method: 'kiosk' });
     onManualSubmit?.(formData, data);
   }, [createPendingSubmission, onManualSubmit, pending]);
-
-  const submitUrl = pending
-    ? `${window.location.origin}/submit?token=${pending.token}`
-    : '';
-  const qrSrc = pending
-    ? `https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=2&bgcolor=ffffff&color=121212&data=${encodeURIComponent(submitUrl)}`
-    : '';
 
   if (mode === 'manual') {
     return (
@@ -185,7 +202,10 @@ export default function QrContactScreen({
         {/* Fallback + skip */}
         <div className="flex flex-col items-center gap-3 mt-7 w-full">
           <button
-            onClick={() => setMode('manual')}
+            onClick={() => {
+              trackEvent('kiosk_manual_form_opened');
+              setMode('manual');
+            }}
             className="flex items-center gap-2 text-hb-text-muted hover:text-white text-sm font-medium transition-colors"
           >
             <Pencil size={14} />

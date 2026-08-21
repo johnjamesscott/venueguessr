@@ -3,21 +3,15 @@ import { MapContainer, TileLayer, Marker, Polyline, useMap } from 'react-leaflet
 import L from 'leaflet';
 import { getRating } from '@/utils/scoring';
 
-const redIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+const createPinIcon = (colour) => new L.DivIcon({
+  html: `<svg xmlns="http://www.w3.org/2000/svg" width="25" height="41" viewBox="0 0 25 41" aria-hidden="true"><path d="M12.5 0C5.6 0 0 5.6 0 12.5 0 23 12.5 41 12.5 41S25 23 25 12.5C25 5.6 19.4 0 12.5 0Z" fill="${colour}" stroke="white" stroke-width="1.5"/><circle cx="12.5" cy="12.5" r="4" fill="white"/></svg>`,
+  className: '',
   iconSize: [25, 41],
   iconAnchor: [12, 41],
-  shadowSize: [41, 41],
 });
 
-const greyIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-grey.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  shadowSize: [41, 41],
-});
+const redIcon = createPinIcon('#AF231C');
+const greyIcon = createPinIcon('#94a3b8');
 
 function FitBounds({ guess, actual }) {
   const map = useMap();

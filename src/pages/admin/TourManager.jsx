@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Plus, Edit2, Trash2, Eye, EyeOff, Search, Upload, X } from 'lucide-react';
+import { Activity, Plus, Edit2, Trash2, Eye, EyeOff, Search, Upload, X } from 'lucide-react';
+import { parseCsv } from '@/utils/csv';
 
 function VenueForm({ initial = null, onSave, onCancel }) {
   const [form, setForm] = useState(initial || {
@@ -106,6 +107,8 @@ export default function TourManager() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [preview, setPreview] = useState(null);
+  const [operationStatus, setOperationStatus] = useState('');
+  const [checkingHealth, setCheckingHealth] = useState(null);
   const fileRef = useRef(null);
 
   const load = async () => {
@@ -129,31 +132,59 @@ export default function TourManager() {
   const handleCSV = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const text = await file.text();
-    const lines = text.split('\n').filter(Boolean);
-    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-    const rows = lines.slice(1);
-    for (const row of rows) {
-      const vals = row.split(',').map(v => v.trim().replace(/"/g, ''));
-      const obj = {};
-      headers.forEach((h, i) => { obj[h] = vals[i] || ''; });
-      await base44.entities.Venue.create({
+    setOperationStatus('Importing venues…');
+    try {
+      const rows = parseCsv(await file.text());
+      const payloads = rows.map((obj) => ({
         venue_name: obj.venue_name || obj.venueName || '',
         space_name: obj.space_name || obj.spaceName || '',
         city: obj.city || '',
         country: obj.country || 'GB',
-        latitude: parseFloat(obj.latitude || obj.lat) || 0,
-        longitude: parseFloat(obj.longitude || obj.lng) || 0,
+        latitude: Number.parseFloat(obj.latitude || obj.lat),
+        longitude: Number.parseFloat(obj.longitude || obj.lng),
         matterport_url: obj.matterport_url || obj.tourUrl || '',
         headbox_url: obj.headbox_url || '',
         difficulty: obj.difficulty || 'easy',
         featured: obj.featured === 'true',
         active: obj.active !== 'false',
         is_demo: obj.is_demo === 'true',
-      });
+      })).filter((venue) => (
+        venue.venue_name
+        && venue.matterport_url
+        && Number.isFinite(venue.latitude)
+        && Number.isFinite(venue.longitude)
+      ));
+      if (payloads.length === 0) throw new Error('No valid venue rows were found');
+      for (let index = 0; index < payloads.length; index += 100) {
+        await base44.entities.Venue.bulkCreate(payloads.slice(index, index + 100));
+      }
+      await load();
+      setOperationStatus(`Imported ${payloads.length} venue${payloads.length === 1 ? '' : 's'}.`);
+    } catch (error) {
+      setOperationStatus(error?.message || 'Venue import failed.');
+    } finally {
+      e.target.value = '';
     }
-    load();
-    e.target.value = '';
+  };
+
+  const checkHealth = async (venueId = null) => {
+    setCheckingHealth(venueId || 'all');
+    setOperationStatus(venueId ? 'Checking tour…' : 'Checking all active tours…');
+    try {
+      const response = await base44.functions.invoke(
+        'checkVenueHealth',
+        venueId ? { venue_id: venueId } : {},
+      );
+      const data = response?.data || {};
+      await load();
+      setOperationStatus(
+        `Checked ${data.checked || 0}: ${data.healthy || 0} healthy, ${data.unhealthy || 0} unavailable.`,
+      );
+    } catch (error) {
+      setOperationStatus(error?.message || 'Tour health check failed.');
+    } finally {
+      setCheckingHealth(null);
+    }
   };
 
   const filtered = venues.filter(v => {
@@ -168,6 +199,9 @@ export default function TourManager() {
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <h1 className="text-2xl font-black text-white">Tour Manager</h1>
         <div className="flex gap-2">
+          <button disabled={Boolean(checkingHealth)} onClick={() => checkHealth()} className="flex items-center gap-2 text-sm border border-[#333] hover:bg-[#1e1e1e] disabled:opacity-50 text-[#aaa] px-3 py-2 rounded-lg transition-colors">
+            <Activity size={14} className={checkingHealth === 'all' ? 'animate-pulse' : ''} /> Check active tours
+          </button>
           <input type="file" ref={fileRef} accept=".csv" onChange={handleCSV} className="hidden" />
           <button onClick={() => fileRef.current?.click()} className="flex items-center gap-2 text-sm border border-[#333] hover:bg-[#1e1e1e] text-[#aaa] px-3 py-2 rounded-lg transition-colors">
             <Upload size={14} /> Import CSV
@@ -177,6 +211,12 @@ export default function TourManager() {
           </button>
         </div>
       </div>
+
+      {operationStatus && (
+        <div className="mb-4 rounded-lg border border-[#333] bg-[#1a1a1a] px-4 py-3 text-sm text-[#aaa]" role="status">
+          {operationStatus}
+        </div>
+      )}
 
       <div className="flex gap-3 mb-4 flex-wrap">
         <div className="relative flex-1 min-w-40">
@@ -206,9 +246,13 @@ export default function TourManager() {
                   <div className="min-w-0">
                     <div className="font-semibold text-white text-sm truncate">{v.venue_name}</div>
                     <div className="text-[#666] text-xs">{v.space_name && `${v.space_name} · `}{v.city}{v.country && `, ${v.country}`} · <span className="capitalize">{v.difficulty}</span>{v.featured && ' · ⭐ Featured'}{v.is_demo && ' · Demo'}</div>
+                    <div className={`mt-1 text-[11px] ${v.health_status === 'healthy' ? 'text-green-400' : v.health_status === 'unhealthy' ? 'text-red-400' : 'text-amber-300'}`}>
+                      {v.health_status === 'healthy' ? `Tour healthy · ${v.last_health_check_ms || 0} ms` : v.health_status === 'unhealthy' ? `Tour unavailable · ${v.health_message || 'Check failed'}` : 'Tour not checked yet'}
+                    </div>
                   </div>
                 </div>
                 <div className="flex gap-1.5 flex-shrink-0">
+                  <button disabled={Boolean(checkingHealth)} onClick={() => checkHealth(v.id)} className="p-2 rounded-lg bg-[#222] hover:bg-[#2a2a2a] disabled:opacity-50 text-[#888] hover:text-white transition-colors" title="Check tour health"><Activity size={14} className={checkingHealth === v.id ? 'animate-pulse' : ''} /></button>
                   <button onClick={() => setPreview(v)} className="p-2 rounded-lg bg-[#222] hover:bg-[#2a2a2a] text-[#888] hover:text-white transition-colors" title="Preview"><Eye size={14} /></button>
                   <button onClick={() => setEditing(v)} className="p-2 rounded-lg bg-[#222] hover:bg-[#2a2a2a] text-[#888] hover:text-white transition-colors" title="Edit"><Edit2 size={14} /></button>
                   <button onClick={() => toggle(v)} className={`p-2 rounded-lg transition-colors ${v.active ? 'bg-green-500/10 text-green-400 hover:bg-red-500/10 hover:text-red-400' : 'bg-[#222] text-[#666] hover:bg-green-500/10 hover:text-green-400'}`} title={v.active ? 'Disable' : 'Enable'}>

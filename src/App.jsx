@@ -49,23 +49,36 @@ const AdminAccessRequired = ({ authenticated = false }) => {
 };
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const {
+    isLoadingAuth,
+    isLoadingPublicSettings,
+    authError,
+    authChecked,
+    checkAppState,
+    navigateToLogin,
+  } = useAuth();
   const location = useLocation();
-  const isPublicRoute = location.pathname.startsWith('/submit');
+  const isAdminRoute = location.pathname.startsWith('/admin');
 
   useEffect(() => {
-    if (!isPublicRoute && authError?.type === 'auth_required') {
+    if (isAdminRoute && !authChecked) {
+      checkAppState();
+    }
+  }, [authChecked, isAdminRoute]);
+
+  useEffect(() => {
+    if (isAdminRoute && authError?.type === 'auth_required') {
       navigateToLogin();
     }
-  }, [authError?.type, isPublicRoute, navigateToLogin]);
+  }, [authError?.type, isAdminRoute, navigateToLogin]);
 
-  if (!isPublicRoute && (isLoadingPublicSettings || isLoadingAuth)) {
+  if (isAdminRoute && (!authChecked || isLoadingPublicSettings || isLoadingAuth)) {
     return (
       <AppLoading />
     );
   }
 
-  if (!isPublicRoute && authError) {
+  if (isAdminRoute && authError) {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
     } else if (authError.type === 'auth_required') {

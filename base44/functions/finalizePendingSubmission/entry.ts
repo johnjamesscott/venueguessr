@@ -3,6 +3,7 @@ import { waitUntil } from 'base44:runtime';
 
 const SUBMISSION_TTL_MS = 24 * 60 * 60 * 1_000;
 const MAX_ROUNDS = 5;
+const LEADERBOARD_PAGE_SIZE = 500;
 
 const PERSONAL_EMAIL_PROVIDERS = new Set([
   'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com',
@@ -27,6 +28,22 @@ const toPublicName = (value) => {
   if (parts.length === 0) return 'Anonymous';
   if (parts.length === 1) return parts[0].slice(0, 80);
   return `${parts[0].slice(0, 60)} ${parts.at(-1)[0].toUpperCase()}.`;
+};
+
+const getRankedEntries = async (base44, competitionId) => {
+  const entries = [];
+  let skip = 0;
+  while (true) {
+    const page = await base44.asServiceRole.entities.LeaderboardEntry.filter(
+      { competition_id: competitionId },
+      '-total_score',
+      LEADERBOARD_PAGE_SIZE,
+      skip,
+    );
+    entries.push(...page);
+    if (page.length < LEADERBOARD_PAGE_SIZE) return entries;
+    skip += page.length;
+  }
 };
 
 Deno.serve(async (req) => {
@@ -109,12 +126,9 @@ Deno.serve(async (req) => {
     const competition = submission.competition_id
       ? await base44.asServiceRole.entities.Competition.get(submission.competition_id).catch(() => null)
       : null;
-    const allEntries = submission.competition_id
-      ? await base44.asServiceRole.entities.LeaderboardEntry.filter({ competition_id: submission.competition_id })
+    const sortedEntries = submission.competition_id
+      ? await getRankedEntries(base44, submission.competition_id)
       : [];
-    const sortedEntries = allEntries.sort(
-      (a, b) => (Number(b.total_score) || 0) - (Number(a.total_score) || 0),
-    );
     const position = sortedEntries.findIndex((candidate) => candidate.id === entry.id) + 1;
 
     await base44.asServiceRole.entities.PendingSubmission.update(submission.id, {
