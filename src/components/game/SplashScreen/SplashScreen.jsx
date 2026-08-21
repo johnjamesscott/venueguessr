@@ -169,11 +169,9 @@ export default function SplashScreen({
         .splash-btn:active { transform: scale(0.95) !important; }
         @keyframes creditFlash {
           0%, 100% { opacity: 1; }
-          50% { opacity: 0.68; }
+          50% { opacity: 0; }
         }
-        .credit-flash { animation: creditFlash 1.2s ease-in-out infinite; }
-        .credit-toggle:active { transform: scale(0.96); }
-        .credit-toggle:focus-visible { outline: 5px solid rgba(255,255,255,0.95); outline-offset: 5px; }
+        .credit-flash { animation: creditFlash 1s step-start infinite; }
 
         @media (max-height: 750px) {
           .splash-globe-wrapper { width: 900px !important; height: 900px !important; }
@@ -236,7 +234,7 @@ export default function SplashScreen({
             </button>
             <button
               type="button"
-              className="credit-toggle credit-flash"
+              className="credit-flash"
               aria-label={`Switch to ${icpBoostArmed ? '1 Credit' : '2 Credits'}`}
               aria-pressed={icpBoostArmed}
               onClick={onToggleIcpBoost}
@@ -248,22 +246,14 @@ export default function SplashScreen({
                 textTransform: 'uppercase',
                 color: '#ffffff',
                 textShadow: '0 0 10px rgba(255,255,255,0.6)',
-                background: icpBoostArmed ? '#AF231C' : 'rgba(20,20,20,0.82)',
-                border: '3px solid rgba(255,255,255,0.9)',
-                borderRadius: 50,
-                padding: '12px 28px',
-                width: 'min(420px, 80vw)',
-                minHeight: 78,
+                background: 'transparent',
+                border: 'none',
+                borderRadius: 12,
+                padding: '8px 18px',
+                minHeight: 64,
                 cursor: 'pointer',
                 touchAction: 'manipulation',
                 WebkitTapHighlightColor: 'transparent',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: icpBoostArmed
-                  ? '0 0 28px rgba(175,35,28,0.85), inset 0 0 0 1px rgba(255,255,255,0.2)'
-                  : '0 5px 18px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.12)',
-                transition: 'transform 0.1s ease, background 0.2s ease, box-shadow 0.2s ease',
               }}
             >
               ★ {icpBoostArmed ? '2 Credits' : '1 Credit'} ★
