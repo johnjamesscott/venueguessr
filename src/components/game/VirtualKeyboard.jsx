@@ -18,6 +18,10 @@ export default function VirtualKeyboard() {
 
   useEffect(() => {
     const onFocus = (e) => {
+      // Never show the kiosk virtual keyboard on the mobile QR submission route
+      if (typeof window !== 'undefined' && window.location.pathname.startsWith('/submit')) {
+        return;
+      }
       const el = e.target;
       if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable) {
         setTarget(el);
