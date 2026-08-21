@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Smartphone, Pencil, ChevronRight } from 'lucide-react';
+import { Smartphone, Pencil } from 'lucide-react';
 import ContactForm from './ContactForm';
 
 export default function QrContactScreen({
@@ -10,6 +10,7 @@ export default function QrContactScreen({
   avgDistanceKm,
   icpBoosted,
   onManualSubmit,
+  onSubmissionComplete,
   onSkip,
 }) {
   const [pending, setPending] = useState(null);
@@ -17,40 +18,93 @@ export default function QrContactScreen({
   const [creating, setCreating] = useState(true);
   const [error, setError] = useState(null);
   const completedRef = useRef(false);
+  const pendingPromiseRef = useRef(null);
+  const submissionPayloadRef = useRef({
+    competition_id: competitionId || null,
+    total_score: totalScore || 0,
+    round_results: roundResults || [],
+    avg_distance_km: avgDistanceKm || 0,
+    icp_boosted: icpBoosted === true,
+  });
 
-  // Create the pending submission (with a random token) once on mount
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await base44.functions.invoke('createPendingSubmission', {
-          competition_id: competitionId || null,
-          total_score: totalScore || 0,
-          round_results: roundResults || [],
-          avg_distance_km: avgDistanceKm || 0,
-          icp_boosted: icpBoosted === true,
-        });
-        const data = res?.data;
-        if (!cancelled && data?.token) { setPending({ id: data.id, token: data.token }); setCreating(false); }
-        else if (!cancelled) { setError('Could not generate QR code'); setCreating(false); }
-      } catch (e) {
-        if (!cancelled) { setError('Could not generate QR code'); setCreating(false); }
-      }
-    })();
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  const createPendingSubmission = useCallback(() => {
+    if (!pendingPromiseRef.current) {
+      pendingPromiseRef.current = base44.functions.invoke(
+        'createPendingSubmission',
+        submissionPayloadRef.current,
+      ).then((response) => {
+        const data = response?.data;
+        if (!data?.token) throw new Error('Could not generate QR code');
+        setPending({ id: data.id, token: data.token });
+        return data;
+      }).catch((requestError) => {
+        pendingPromiseRef.current = null;
+        throw requestError;
+      });
+    }
+    return pendingPromiseRef.current;
   }, []);
 
-  // Realtime: advance to summary when the phone finalizes the submission
+  // Create the pending submission (with a random token) once on mount.
   useEffect(() => {
-    if (!pending?.id) return;
-    const unsub = base44.entities.PendingSubmission.subscribe((event) => {
-      if (event.id === pending.id && event.type === 'update' && event.data?.status === 'completed') {
-        if (!completedRef.current) { completedRef.current = true; onSkip(); }
+    let cancelled = false;
+    createPendingSubmission()
+      .then(() => {
+        if (!cancelled) setCreating(false);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setError('Could not generate QR code');
+          setCreating(false);
+        }
+      });
+    return () => { cancelled = true; };
+  }, [createPendingSubmission]);
+
+  // Poll the token-specific public function. PendingSubmission records themselves
+  // remain private, so the kiosk never subscribes to other players' submissions.
+  useEffect(() => {
+    if (!pending?.token) return undefined;
+    let active = true;
+    let timeoutId;
+
+    const checkStatus = async () => {
+      try {
+        const response = await base44.functions.invoke('getPendingSubmission', { token: pending.token });
+        const data = response?.data;
+        if (active && data?.status === 'completed' && !completedRef.current) {
+          completedRef.current = true;
+          onSubmissionComplete?.(data);
+          return;
+        }
+      } catch (_) {
+        // A temporary polling failure should not interrupt the kiosk journey.
       }
+      if (active) timeoutId = window.setTimeout(checkStatus, 2_000);
+    };
+
+    timeoutId = window.setTimeout(checkStatus, 2_000);
+    return () => {
+      active = false;
+      window.clearTimeout(timeoutId);
+    };
+  }, [onSubmissionComplete, pending?.token]);
+
+  const handleManualSubmit = useCallback(async (formData) => {
+    const currentPending = pending || await createPendingSubmission();
+    const response = await base44.functions.invoke('finalizePendingSubmission', {
+      token: currentPending.token,
+      first_name: formData.firstName,
+      last_name: formData.lastName,
+      email: formData.email,
+      company: formData.company,
     });
-    return unsub;
-  }, [pending?.id, onSkip]);
+    const data = response?.data;
+    if (!data?.success) throw new Error(data?.error || 'Submission failed');
+
+    completedRef.current = true;
+    onManualSubmit?.(formData, data);
+  }, [createPendingSubmission, onManualSubmit, pending]);
 
   const submitUrl = pending
     ? `${window.location.origin}/submit?token=${pending.token}`
@@ -62,11 +116,8 @@ export default function QrContactScreen({
   if (mode === 'manual') {
     return (
       <ContactForm
-        onSubmit={onManualSubmit}
+        onSubmit={handleManualSubmit}
         onSkip={onSkip}
-        competitionId={competitionId}
-        totalScore={totalScore}
-        icpBoosted={icpBoosted}
       />
     );
   }

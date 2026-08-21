@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.43';
 
 Deno.serve(async (req) => {
   try {
@@ -26,6 +26,7 @@ Deno.serve(async (req) => {
 
     return Response.json({ success: true, deleted_entries: deleted });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('resetCompetition failed:', error?.message || 'Unknown error');
+    return Response.json({ error: 'Could not reset the competition' }, { status: 500 });
   }
 });

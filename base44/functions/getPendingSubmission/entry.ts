@@ -1,10 +1,12 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.43';
+
+const SUBMISSION_TTL_MS = 24 * 60 * 60 * 1_000;
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-    const { token } = body;
+    const token = typeof body?.token === 'string' ? body.token.trim().slice(0, 100) : '';
 
     if (!token) {
       return Response.json({ error: 'token is required' }, { status: 400 });
@@ -13,7 +15,13 @@ Deno.serve(async (req) => {
     const pending = await base44.asServiceRole.entities.PendingSubmission.filter({ token });
     const sub = pending[0];
     if (!sub) {
-      return Response.json({ error: 'not found' }, { status: 404 });
+      return Response.json({ error: 'Score submission not found' }, { status: 404 });
+    }
+
+    const createdAt = Date.parse(sub.created_date || '');
+    if (sub.status === 'pending' && Number.isFinite(createdAt) && Date.now() - createdAt > SUBMISSION_TTL_MS) {
+      await base44.asServiceRole.entities.PendingSubmission.update(sub.id, { status: 'expired' });
+      return Response.json({ error: 'This score submission has expired' }, { status: 410 });
     }
 
     let competitionName = '';
@@ -29,8 +37,10 @@ Deno.serve(async (req) => {
       round_results: sub.round_results || [],
       avg_distance_km: sub.avg_distance_km,
       competition_name: competitionName,
+      leaderboard_entry_id: sub.status === 'completed' ? sub.leaderboard_entry_id || null : null,
     });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('getPendingSubmission failed:', error?.message || 'Unknown error');
+    return Response.json({ error: 'Could not load the score submission' }, { status: 500 });
   }
 });

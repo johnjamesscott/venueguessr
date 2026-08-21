@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
 
-export default function ContactForm({ onSubmit, onSkip, competitionId, totalScore, icpBoosted }) {
+const EMPTY_ERRORS = { firstName: null, lastName: null, email: null, form: null };
+
+export default function ContactForm({ onSubmit, onSkip }) {
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', company: '' });
   const [submitting, setSubmitting] = useState(false);
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState(EMPTY_ERRORS);
 
   const validate = () => {
-    const errs = {};
+    const errs = { ...EMPTY_ERRORS };
     if (!form.firstName.trim()) errs.firstName = 'First name is required';
     if (!form.lastName.trim()) errs.lastName = 'Last name is required';
     if (!form.email.trim()) errs.email = 'Business email is required';
@@ -20,31 +21,18 @@ export default function ContactForm({ onSubmit, onSkip, competitionId, totalScor
   const handleSubmit = async (e) => {
     e.preventDefault();
     const errs = validate();
-    if (Object.keys(errs).length > 0) { setErrors(errs); return; }
+    if (Object.values(errs).some(Boolean)) { setErrors(errs); return; }
     setSubmitting(true);
 
     try {
-      // Create lead in Base44
-      const lead = await base44.entities.Lead.create({
-        competition_id: competitionId || null,
-        first_name: form.firstName,
-        last_name: form.lastName,
-        email: form.email,
-        company: form.company,
-        score: totalScore || 0,
-        consent: true,
-        mailjet_synced: false,
-        icp_boosted: icpBoosted === true,
-      });
-
-      // Fire-and-forget Mailjet sync
-      base44.functions.invoke('syncLeadToMailjet', { lead_id: lead.id }).catch(() => {});
+      await onSubmit(form);
     } catch (_) {
-      // Silent fail — proceed regardless
+      setErrors(prev => ({ ...prev, form: 'Submission failed. Please try again.' }));
+      setSubmitting(false);
+      return;
     }
 
     setSubmitting(false);
-    onSubmit(form);
   };
 
   const handleChange = (field, value) => {
@@ -62,12 +50,17 @@ export default function ContactForm({ onSubmit, onSkip, competitionId, totalScor
               Enter your details to see the leaderboard and discover 100k+ venues on HeadBox.
             </p>
           </div>
-          <button onClick={onSkip} className="text-hb-text-muted hover:text-white transition-colors ml-4 mt-1" aria-label="Skip">
+          <button onClick={onSkip} disabled={submitting} className="text-hb-text-muted hover:text-white disabled:opacity-40 transition-colors ml-4 mt-1" aria-label="Skip">
             <X size={18} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+          {errors.form && (
+            <div className="bg-red-500/10 border border-red-500/40 rounded-hb-md px-3 py-2">
+              <p className="text-red-400 text-sm">{errors.form}</p>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-white/80 text-xs font-semibold uppercase tracking-wider mb-1.5">First name <span className="text-hb-red">*</span></label>
@@ -107,6 +100,10 @@ export default function ContactForm({ onSubmit, onSkip, competitionId, totalScor
         </form>
 
         <p className="text-hb-text-muted text-xs text-center mt-4 leading-relaxed">
+          By saving your score, you agree that HeadBox may email your results and contact you about relevant venues and events.{' '}
+          <a href="https://www.headbox.com/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-hb-red hover:underline">Privacy policy</a>
+        </p>
+        <p className="text-hb-text-muted text-xs text-center mt-3 leading-relaxed">
           HeadBox connects you to 100,000+ unique venues worldwide.{' '}
           <a href="https://www.headbox.com" target="_blank" rel="noopener noreferrer" className="text-hb-red hover:underline">Explore venues →</a>
         </p>

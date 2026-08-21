@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Search, Download, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
+import { downloadCsv } from '@/utils/csv';
 
 export default function LeadManager() {
   const [competitions, setCompetitions] = useState([]);
@@ -14,7 +15,7 @@ export default function LeadManager() {
     const all = compId
       ? await base44.entities.Lead.filter({ competition_id: compId })
       : await base44.entities.Lead.list('-created_date', 500);
-    setLeads(all.sort((a, b) => new Date(b.created_date) - new Date(a.created_date)));
+    setLeads(all.sort((a, b) => new Date(b.created_date).getTime() - new Date(a.created_date).getTime()));
     setLoading(false);
   };
 
@@ -37,11 +38,7 @@ export default function LeadManager() {
     filtered.forEach(l => {
       rows.push([l.first_name, l.last_name, l.email, l.company, l.score, l.consent, l.mailjet_synced, l.created_date?.split('T')[0]]);
     });
-    const csv = rows.map(r => r.map(v => `"${v ?? ''}"`).join(',')).join('\n');
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-    a.download = `leads-${selectedComp || 'all'}.csv`;
-    a.click();
+    downloadCsv(`leads-${selectedComp || 'all'}.csv`, rows);
   };
 
   const filtered = leads.filter(l => !search ||

@@ -54,7 +54,7 @@ export default function PrizeManager() {
 
   const startEdit = (prize) => {
     setEditing(prize);
-    setForm({ position: prize.position, prize_name: prize.prize_name, description: prize.description || '', active: prize.active });
+    setForm({ position: String(prize.position ?? ''), prize_name: prize.prize_name, description: prize.description || '', active: prize.active });
     setShowForm(true);
   };
 
@@ -65,7 +65,7 @@ export default function PrizeManager() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-black text-white">Prize Manager</h1>
         {selectedComp && (
-          <button onClick={() => { setEditing(null); setShowForm(true); setForm({ position: prizes.length + 1, prize_name: '', description: '', active: true }); }}
+          <button onClick={() => { setEditing(null); setShowForm(true); setForm({ position: String(prizes.length + 1), prize_name: '', description: '', active: true }); }}
             className="bg-[#AF231C] hover:bg-[#8C1C16] text-white text-sm font-bold px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
             <Plus size={14} /> Add Prize
           </button>

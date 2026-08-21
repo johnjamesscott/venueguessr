@@ -1,43 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
 
 const MEDAL = ['🥇', '🥈', '🥉'];
 const PAGE_SIZE = 4;
 
-async function fetchLeaderboard() {
-  // Fetch active competition first
-  const res = await base44.functions.invoke('getActiveCompetition', {});
-  const competition = res?.data?.competition || null;
-
-  if (!competition) return { entries: [], competition: null, prizes: [] };
-
-  // Fetch entries and prizes for this competition in parallel
-  const [entries, prizes] = await Promise.all([
-    base44.entities.LeaderboardEntry.filter(
-      { competition_id: competition.id },
-      '-total_score',
-      20
-    ),
-    base44.entities.Prize.filter({ competition_id: competition.id, active: true }),
-  ]);
-
-  return { entries, competition, prizes };
-}
-
-export default function LeaderboardScroller() {
+export default function LeaderboardScroller({ data, isLoading = false, hasError = false }) {
   const [page, setPage] = useState(0);
   const timerRef = useRef(null);
 
-  const { data = { entries: [], competition: null, prizes: [] }, isLoading } = useQuery({
-    queryKey: ['leaderboard-splash'],
-    queryFn: fetchLeaderboard,
-    staleTime: 30_000,
-    refetchInterval: 30_000,
-    retry: 2,
-  });
-
-  const { entries, competition, prizes } = data;
+  const { entries = [], competition = null, prizes = [] } = data || {};
   const prizeByPosition = (prizes || []).reduce((acc, p) => {
     acc[p.position] = p.prize_name;
     return acc;
@@ -62,6 +32,14 @@ export default function LeaderboardScroller() {
     return (
       <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, textAlign: 'center', padding: '8px 0' }}>
         Loading leaderboard…
+      </p>
+    );
+  }
+
+  if (hasError) {
+    return (
+      <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, textAlign: 'center', padding: '8px 0' }}>
+        Scores temporarily unavailable.
       </p>
     );
   }

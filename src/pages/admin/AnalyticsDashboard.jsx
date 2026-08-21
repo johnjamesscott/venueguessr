@@ -61,7 +61,7 @@ export default function AnalyticsDashboard() {
     });
   }, []);
 
-  const StatCard = ({ label, value, sub }) => (
+  const StatCard = ({ label, value, sub = null }) => (
     <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5">
       <div className="text-[#888] text-xs font-semibold uppercase tracking-wider mb-2">{label}</div>
       <div className="text-3xl font-black text-white">{value}</div>

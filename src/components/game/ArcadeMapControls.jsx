@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import CountdownTimer from './CountdownTimer';
 
 function GBBtn({ size = 44, fontSize = 18, onClick, onMouseEnter, onMouseLeave, children }) {

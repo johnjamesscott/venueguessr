@@ -48,13 +48,30 @@
       "type": "boolean",
       "default": false,
       "description": "True if the stored total_score was ICP-boosted on the kiosk"
+    },
+    "lead_id": {
+      "type": "string",
+      "description": "Lead created when this submission is finalized"
+    },
+    "leaderboard_entry_id": {
+      "type": "string",
+      "description": "Leaderboard entry created when this submission is finalized"
+    },
+    "email_sent": {
+      "type": "boolean",
+      "default": false,
+      "description": "True after the post-game email has been sent"
     }
   },
   "required": [
     "token"
   ],
   "rls": {
-    "read": {},
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
     "create": {
       "user_condition": {
         "role": "admin"

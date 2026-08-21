@@ -1,18 +1,36 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.43';
+
+const cleanText = (value, maxLength) => (
+  typeof value === 'string' ? value.trim().replace(/\s+/g, ' ').slice(0, maxLength) : ''
+);
+
+const escapeHtml = (value) => cleanText(value, 200)
+  .replaceAll('&', '&amp;')
+  .replaceAll('<', '&lt;')
+  .replaceAll('>', '&gt;')
+  .replaceAll('"', '&quot;')
+  .replaceAll("'", '&#039;');
+
+const safeScore = (value) => {
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.max(0, Math.round(number)) : 0;
+};
 
 // Shared email template builder — used by the function and the preview endpoint
 // HeadBox design system: Montserrat, white card on light-neutral, #4A4C49 body, #AF231C accents only.
 function buildEmailHtml({ first_name, total_score, round_results }) {
   const FONT = "'Montserrat',Arial,Helvetica,sans-serif";
+  const safeFirstName = escapeHtml(first_name) || 'there';
+  const safeTotalScore = safeScore(total_score);
 
   const venueRows = (round_results || []).map((r, i) => `
     <tr>
       <td style="padding:14px 20px;font-family:${FONT};font-size:14px;color:#4A4C49;border-bottom:1px solid #ececec;">
         <span style="font-weight:600;color:#1a1a1a;">Round ${i + 1}</span><br/>
-        ${r.venue_name || 'Unknown'}${r.city ? ` &middot; ${r.city}` : ''}
+        ${escapeHtml(r.venue_name) || 'Unknown'}${r.city ? ` &middot; ${escapeHtml(r.city)}` : ''}
       </td>
       <td style="padding:14px 20px;font-family:${FONT};font-size:14px;font-weight:700;color:#1a1a1a;text-align:right;border-bottom:1px solid #ececec;vertical-align:top;white-space:nowrap;">
-        ${(r.score || 0).toLocaleString()} pts
+        ${safeScore(r.score).toLocaleString()} pts
       </td>
     </tr>
   `).join('');
@@ -45,7 +63,7 @@ function buildEmailHtml({ first_name, total_score, round_results }) {
 
 <!-- Preheader (hidden) -->
 <div style="display:none;max-height:0;overflow:hidden;font-size:1px;line-height:1px;color:#f7f7f6;mso-hide:all;">
-  You scored ${(total_score || 0).toLocaleString()} pts in VenueGuessr. See your full round breakdown inside.
+  You scored ${safeTotalScore.toLocaleString()} pts in VenueGuessr. See your full round breakdown inside.
 </div>
 
 <table class="hb-wrapper" border="0" cellpadding="0" cellspacing="0" width="100%" bgcolor="#f7f7f6" style="background-color:#f7f7f6;">
@@ -71,7 +89,7 @@ function buildEmailHtml({ first_name, total_score, round_results }) {
         <tr>
           <td bgcolor="#ffffff" style="padding:32px 32px 0;background-color:#ffffff;">
             <p style="margin:0 0 8px;font-family:${FONT};font-size:20px;font-weight:700;color:#1a1a1a;">
-              Hi ${first_name || 'there'},
+              Hi ${safeFirstName},
             </p>
             <p style="margin:0;font-family:${FONT};font-size:15px;line-height:1.7;color:#4A4C49;">
               Thanks for playing VenueGuessr at the HeadBox stand! Here&apos;s a summary of your game.
@@ -89,7 +107,7 @@ function buildEmailHtml({ first_name, total_score, round_results }) {
                     Your Total Score
                   </p>
                   <p style="margin:0;font-family:${FONT};font-size:52px;font-weight:900;color:#1a1a1a;line-height:1.1;">
-                    ${(total_score || 0).toLocaleString()}
+                    ${safeTotalScore.toLocaleString()}
                   </p>
                   <p style="margin:6px 0 0;font-family:${FONT};font-size:13px;color:#7a7c78;">
                     points
@@ -165,12 +183,40 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-    const { first_name, last_name, email, total_score, round_results, preview_only } = body;
+    const { preview_only } = body;
 
-    // Preview mode — return HTML without sending
+    // Preview mode is restricted to authenticated admins because it exposes the
+    // exact internal email template used by the live app.
     if (preview_only) {
-      const html = buildEmailHtml({ first_name: first_name || 'Jane', total_score: total_score || 8750, round_results });
+      const user = await base44.auth.me().catch(() => null);
+      if (user?.role !== 'admin') {
+        return Response.json({ error: 'Admin access required' }, { status: 403 });
+      }
+      const html = buildEmailHtml({
+        first_name: body?.first_name || 'Jane',
+        total_score: body?.total_score || 8750,
+        round_results: Array.isArray(body?.round_results) ? body.round_results.slice(0, 3) : [],
+      });
       return Response.json({ html });
+    }
+
+    const submissionToken = cleanText(body?.submission_token, 100);
+    if (!submissionToken) {
+      return Response.json({ error: 'submission_token is required' }, { status: 400 });
+    }
+
+    const pending = await base44.asServiceRole.entities.PendingSubmission.filter({ token: submissionToken });
+    const submission = pending[0];
+    if (!submission || submission.status !== 'completed' || !submission.lead_id) {
+      return Response.json({ error: 'Completed score submission not found' }, { status: 404 });
+    }
+    if (submission.email_sent === true) {
+      return Response.json({ success: true, already_sent: true });
+    }
+
+    const lead = await base44.asServiceRole.entities.Lead.get(submission.lead_id).catch(() => null);
+    if (!lead?.email) {
+      return Response.json({ error: 'Submission lead not found' }, { status: 404 });
     }
 
     const MAILJET_API_KEY = Deno.env.get('MAILJET_API_KEY');
@@ -181,7 +227,12 @@ Deno.serve(async (req) => {
     }
 
     const credentials = btoa(`${MAILJET_API_KEY}:${MAILJET_SECRET_KEY}`);
-    const htmlBody = buildEmailHtml({ first_name, total_score, round_results });
+    const totalScore = safeScore(submission.total_score);
+    const htmlBody = buildEmailHtml({
+      first_name: lead.first_name,
+      total_score: totalScore,
+      round_results: submission.round_results || [],
+    });
 
     const sendRes = await fetch('https://api.mailjet.com/v3.1/send', {
       method: 'POST',
@@ -192,8 +243,8 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         Messages: [{
           From: { Email: 'noreply@headbox.com', Name: 'HeadBox' },
-          To: [{ Email: email, Name: `${first_name} ${last_name}`.trim() }],
-          Subject: `You scored ${(total_score || 0).toLocaleString()} pts in VenueGuessr 🎯`,
+          To: [{ Email: lead.email, Name: `${cleanText(lead.first_name, 80)} ${cleanText(lead.last_name, 80)}`.trim() }],
+          Subject: `You scored ${totalScore.toLocaleString()} pts in VenueGuessr 🎯`,
           HTMLPart: htmlBody,
         }],
       }),
@@ -203,13 +254,14 @@ Deno.serve(async (req) => {
     const msgStatus = sendData?.Messages?.[0]?.Status;
 
     if (!sendRes.ok || msgStatus === 'error') {
-      console.error('Mailjet send failed:', JSON.stringify(sendData));
-      return Response.json({ error: 'Mailjet send failed', detail: sendData }, { status: 500 });
+      console.error('Mailjet send failed:', sendRes.status, msgStatus || 'unknown status');
+      return Response.json({ error: 'Post-game email could not be sent' }, { status: 502 });
     }
 
-    console.log('Mailjet send response:', JSON.stringify(sendData));
-    return Response.json({ success: true, mailjet: sendData });
+    await base44.asServiceRole.entities.PendingSubmission.update(submission.id, { email_sent: true });
+    return Response.json({ success: true });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('sendPostGameEmail failed:', error?.message || 'Unknown error');
+    return Response.json({ error: 'Post-game email could not be sent' }, { status: 500 });
   }
 });

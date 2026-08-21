@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 
-export default function SplineGlobe({ size = 700 }) {
+export default function SplineGlobe({ size = '700px' }) {
   useEffect(() => {
     if (document.querySelector('script[src*="spline-viewer"]')) return;
     const script = document.createElement('script');
@@ -21,11 +21,11 @@ export default function SplineGlobe({ size = 700 }) {
       animation: 'glowPulse 3s ease-in-out infinite',
       flexShrink: 0,
     }}>
-      <spline-viewer
-        url="https://prod.spline.design/5Lju2NLw8YEapJXE/scene.splinecode"
-        style={{ width: '100%', height: '100%', pointerEvents: 'none', display: 'block' }}
-        loading="eager"
-      />
+      {React.createElement('spline-viewer', {
+        url: 'https://prod.spline.design/5Lju2NLw8YEapJXE/scene.splinecode',
+        style: { width: '100%', height: '100%', pointerEvents: 'none', display: 'block' },
+        loading: 'eager',
+      })}
     </div>
   );
 }

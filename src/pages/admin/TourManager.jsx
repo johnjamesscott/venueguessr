@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Plus, Edit2, Trash2, Eye, EyeOff, Search, Upload, X, ExternalLink } from 'lucide-react';
+import { Plus, Edit2, Trash2, Eye, EyeOff, Search, Upload, X } from 'lucide-react';
 
-function VenueForm({ initial, onSave, onCancel }) {
+function VenueForm({ initial = null, onSave, onCancel }) {
   const [form, setForm] = useState(initial || {
     venue_name: '', space_name: '', city: '', country: 'GB',
     latitude: '', longitude: '', matterport_url: '', headbox_url: '',
@@ -106,7 +106,7 @@ export default function TourManager() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [preview, setPreview] = useState(null);
-  const fileRef = useRef();
+  const fileRef = useRef(null);
 
   const load = async () => {
     const all = await base44.entities.Venue.list('-created_date', 200);
@@ -169,7 +169,7 @@ export default function TourManager() {
         <h1 className="text-2xl font-black text-white">Tour Manager</h1>
         <div className="flex gap-2">
           <input type="file" ref={fileRef} accept=".csv" onChange={handleCSV} className="hidden" />
-          <button onClick={() => fileRef.current.click()} className="flex items-center gap-2 text-sm border border-[#333] hover:bg-[#1e1e1e] text-[#aaa] px-3 py-2 rounded-lg transition-colors">
+          <button onClick={() => fileRef.current?.click()} className="flex items-center gap-2 text-sm border border-[#333] hover:bg-[#1e1e1e] text-[#aaa] px-3 py-2 rounded-lg transition-colors">
             <Upload size={14} /> Import CSV
           </button>
           <button onClick={() => { setEditing(null); setShowForm(true); }} className="bg-[#AF231C] hover:bg-[#8C1C16] text-white text-sm font-bold px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">

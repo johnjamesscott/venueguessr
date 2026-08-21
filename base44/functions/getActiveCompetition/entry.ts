@@ -1,8 +1,12 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.43';
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
+    const user = await base44.auth.me().catch(() => null);
+    if (user?.role !== 'admin') {
+      return Response.json({ error: 'Admin access required' }, { status: 403 });
+    }
 
     const competitions = await base44.asServiceRole.entities.Competition.filter({ active: true });
     const competition = competitions[0] || null;
@@ -18,6 +22,7 @@ Deno.serve(async (req) => {
 
     return Response.json({ competition, prizes });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('getActiveCompetition failed:', error?.message || 'Unknown error');
+    return Response.json({ error: 'Could not load the active competition' }, { status: 500 });
   }
 });

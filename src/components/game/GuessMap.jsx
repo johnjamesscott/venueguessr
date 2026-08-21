@@ -1,9 +1,8 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
@@ -42,7 +41,17 @@ function MapController({ mapRef }) {
   return null;
 }
 
-export default function GuessMap({ onGuessPlaced, guessLocked, currentGuess, onLockGuess, height, fill, mapCenter, mapZoom, mapRef }) {
+export default function GuessMap({
+  onGuessPlaced,
+  guessLocked,
+  currentGuess,
+  onLockGuess,
+  height = 300,
+  fill = false,
+  mapCenter = null,
+  mapZoom = null,
+  mapRef = null,
+}) {
   const [markerPos, setMarkerPos] = useState(null);
 
   useEffect(() => {
@@ -55,9 +64,10 @@ export default function GuessMap({ onGuessPlaced, guessLocked, currentGuess, onL
     onGuessPlaced(latlng);
   }, [guessLocked, onGuessPlaced]);
 
+  /** @type {React.CSSProperties} */
   const containerStyle = fill
     ? { position: 'absolute', inset: 0 }
-    : { height: height || 300 };
+    : { height };
 
   return (
     <div className="relative w-full overflow-hidden" style={containerStyle}>

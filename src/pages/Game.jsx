@@ -1,8 +1,8 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { getEmbedUrl } from '@/data/venues';
+import React, { lazy, useState, useCallback, useRef } from 'react';
 import { calculateDistance } from '@/utils/distance';
 import { calculateScore, ICP_BOOST_FACTOR } from '@/utils/scoring';
 import { base44 } from '@/api/base44Client';
+import { EMPTY_LEADERBOARD, usePublicLeaderboard } from '@/hooks/usePublicLeaderboard';
 import {
   unlockAudio, playPinSound, playLockSound,
   playCelebrationSound, playErrorSound,
@@ -11,13 +11,14 @@ import {
 import SplashScreen from '@/components/game/SplashScreen/SplashScreen';
 import GameHeader from '@/components/game/GameHeader';
 import MatterportViewer from '@/components/game/MatterportViewer';
-import GuessMap from '@/components/game/GuessMap';
 import ArcadeMapControls from '@/components/game/ArcadeMapControls';
-import RoundResult from '@/components/game/RoundResult';
 import QrContactScreen from '@/components/game/QrContactScreen';
 import GameSummary from '@/components/game/GameSummary';
 import PreRoundCountdown from '@/components/game/PreRoundCountdown';
 import CelebrationOverlay from '@/components/game/CelebrationOverlay';
+
+const GuessMap = lazy(() => import('@/components/game/GuessMap'));
+const RoundResult = lazy(() => import('@/components/game/RoundResult'));
 
 const ROUND_SECONDS = 30;
 const TOTAL_ROUNDS = 3;
@@ -55,17 +56,22 @@ export default function Game() {
   const [currentDistance, setCurrentDistance] = useState(null);
   const [preRoundCountdown, setPreRoundCountdown] = useState(false);
   const [currentScore, setCurrentScore] = useState(0);
-  const [playerEmail, setPlayerEmail] = useState(null);
+  const [playerEntryId, setPlayerEntryId] = useState(null);
   const [showCelebration, setShowCelebration] = useState(false);
   const [isDemo, setIsDemo] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(ROUND_SECONDS);
-  const [activeCompetition, setActiveCompetition] = useState(null);
-  const [prizes, setPrizes] = useState([]);
   const [venuePool, setVenuePool] = useState([]);
   const [icpBoostArmed, setIcpBoostArmed] = useState(() => {
     try { return localStorage.getItem('vg_icp_boost') === '1'; } catch { return false; }
   });
-  const scoreSubmittedRef = useRef(false);
+  const {
+    data: publicLeaderboard = EMPTY_LEADERBOARD,
+    isLoading: leaderboardLoading,
+    isError: leaderboardError,
+  } = usePublicLeaderboard({
+    enabled: gameState === GAME_STATES.SPLASH,
+  });
+  const activeCompetition = publicLeaderboard.competition;
 
   const toggleIcpBoost = useCallback(() => {
     setIcpBoostArmed(prev => {
@@ -73,14 +79,6 @@ export default function Game() {
       try { localStorage.setItem('vg_icp_boost', next ? '1' : '0'); } catch {}
       return next;
     });
-  }, []);
-
-  // Load active competition + prizes on mount
-  useEffect(() => {
-    base44.functions.invoke('getActiveCompetition', {}).then(res => {
-      if (res?.data?.competition) setActiveCompetition(res.data.competition);
-      if (res?.data?.prizes) setPrizes(res.data.prizes);
-    }).catch(() => {});
   }, []);
 
   const resetRoundState = () => {
@@ -99,8 +97,8 @@ export default function Game() {
     // Load demo venue from Base44
     let demoVenues = [];
     try {
-      const all = await base44.entities.Venue.filter({ is_demo: true, active: true });
-      demoVenues = all.map(venueToGame);
+      const response = await base44.functions.invoke('getRandomVenues', { demo: true });
+      demoVenues = (response?.data?.venues || []).map(venueToGame);
     } catch (_) {}
 
     if (demoVenues.length === 0) {
@@ -116,6 +114,7 @@ export default function Game() {
     setVenuePool([]);
     setCurrentRoundIndex(0);
     setResults([]);
+    setPlayerEntryId(null);
     setIsDemo(true);
     resetRoundState();
     setGameState(GAME_STATES.PLAYING);
@@ -127,12 +126,12 @@ export default function Game() {
       const res = await base44.functions.invoke('getRandomVenues', {});
       const venues = (res?.data?.venues || []).map(venueToGame);
       if (venues.length > 0) {
-        setShuffledVenues(venues);
-        setVenuePool([]);
+        setShuffledVenues(venues.slice(0, TOTAL_ROUNDS));
+        setVenuePool(venues.slice(TOTAL_ROUNDS));
         setCurrentRoundIndex(0);
         setResults([]);
+        setPlayerEntryId(null);
         setIsDemo(false);
-        scoreSubmittedRef.current = false;
         resetRoundState();
         setGameState(GAME_STATES.PLAYING);
         return;
@@ -215,62 +214,21 @@ export default function Game() {
     }
   }, [currentRoundIndex, shuffledVenues, currentGuess, currentDistance, currentScore, isDemo]);
 
-  const handleContactSubmit = useCallback(async (formData) => {
-    if (scoreSubmittedRef.current) return;
-    scoreSubmittedRef.current = true;
-
-    // results already contains all rounds (added in handleNextRound for the last round too)
-    const finalResults = results;
-    const baseTotal = finalResults.reduce((sum, r) => sum + (r.score || 0), 0);
-    const total = icpBoostArmed ? Math.round(baseTotal * ICP_BOOST_FACTOR) : baseTotal;
-    const withDist = finalResults.filter(r => r.distance);
-    const avgKm = withDist.length > 0
-      ? withDist.reduce((sum, r) => sum + (r.distance?.km || 0), 0) / withDist.length : 0;
-
-    try {
-      await base44.functions.invoke('submitScore', {
-        player_name: `${formData.firstName} ${formData.lastName}`.trim(),
-        email: formData.email,
-        total_score: total,
-        rounds_played: finalResults.length,
-        avg_distance_km: Math.round(avgKm),
-        icp_boosted: icpBoostArmed,
-      });
-      if (formData.email) setPlayerEmail(formData.email);
-    } catch (_) {}
-
-    // Send post-game email
-    if (formData.email) {
-      base44.functions.invoke('sendPostGameEmail', {
-        first_name: formData.firstName,
-        last_name: formData.lastName,
-        email: formData.email,
-        total_score: total,
-        round_results: finalResults.map(r => ({
-          venue_name: r.venueName || 'Unknown Venue',
-          city: r.city || '',
-          score: r.score || 0,
-          distance_km: r.distance?.km || 0,
-        })),
-      }).catch(err => console.error('sendPostGameEmail failed:', err));
-    }
-
+  const handleContactSubmit = useCallback((_formData, submissionResult) => {
+    setPlayerEntryId(submissionResult?.entry_id || null);
     setGameState(GAME_STATES.SUMMARY);
-  }, [results, shuffledVenues, currentRoundIndex, currentGuess, currentDistance, currentScore, icpBoostArmed]);
+  }, []);
+
+  const handleRemoteContactComplete = useCallback((submissionResult) => {
+    setPlayerEntryId(submissionResult?.leaderboard_entry_id || null);
+    setGameState(GAME_STATES.SUMMARY);
+  }, []);
 
   const handleContactSkip = useCallback(() => {
     setGameState(GAME_STATES.SUMMARY);
   }, []);
 
   const mapRef = useRef(null);
-
-  const handlePan = useCallback((dir) => {
-    const map = mapRef.current;
-    if (!map) return;
-    const PAN = 80;
-    const offsets = { up: [0, -PAN], down: [0, PAN], left: [-PAN, 0], right: [PAN, 0] };
-    map.panBy(offsets[dir], { animate: true, duration: 0.3 });
-  }, []);
 
   const handleZoom = useCallback((direction) => {
     const map = mapRef.current;
@@ -288,7 +246,17 @@ export default function Game() {
   const isLastRound = currentRoundIndex >= shuffledVenues.length - 1;
 
   if (gameState === GAME_STATES.SPLASH) {
-    return <SplashScreen onStart={startGame} onDemo={startDemo} prizes={prizes} icpBoostArmed={icpBoostArmed} onToggleIcpBoost={toggleIcpBoost} />;
+    return (
+      <SplashScreen
+        onStart={startGame}
+        onDemo={startDemo}
+        leaderboardData={publicLeaderboard}
+        leaderboardLoading={leaderboardLoading}
+        leaderboardError={leaderboardError}
+        icpBoostArmed={icpBoostArmed}
+        onToggleIcpBoost={toggleIcpBoost}
+      />
+    );
   }
 
   if (gameState === GAME_STATES.SUMMARY) {
@@ -299,9 +267,8 @@ export default function Game() {
         results={results}
         venues={shuffledVenues}
         totalScore={totalScore}
-        playerEmail={playerEmail}
+        playerEntryId={playerEntryId}
         onPlayAgain={() => setGameState(GAME_STATES.SPLASH)}
-        prizes={prizes}
         competitionId={activeCompetition?.id}
       />
     );
@@ -328,6 +295,7 @@ export default function Game() {
           avgDistanceKm={Math.round(avgKm)}
           icpBoosted={icpBoostArmed}
           onManualSubmit={handleContactSubmit}
+          onSubmissionComplete={handleRemoteContactComplete}
           onSkip={handleContactSkip}
         />
       </div>
@@ -341,7 +309,7 @@ export default function Game() {
       {gameState === GAME_STATES.PLAYING && currentVenue && (
         <div style={{ position: 'fixed', inset: 0, background: '#121212' }}>
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 30, background: 'white' }}>
-            <GameHeader round={currentRoundIndex + 1} totalRounds={TOTAL_ROUNDS} />
+            <GameHeader round={currentRoundIndex + 1} totalRounds={Math.min(shuffledVenues.length, TOTAL_ROUNDS)} />
           </div>
           <div style={{ position: 'absolute', top: 88, left: 0, right: 0, bottom: 0, zIndex: -10, overflow: 'hidden' }}>
             <MatterportViewer
@@ -379,7 +347,7 @@ export default function Game() {
 
       {gameState === GAME_STATES.ROUND_RESULT && currentVenue && (
         <div className="flex flex-col" style={{ minHeight: '100dvh' }}>
-          <GameHeader round={currentRoundIndex + 1} totalRounds={TOTAL_ROUNDS} />
+          <GameHeader round={currentRoundIndex + 1} totalRounds={Math.min(shuffledVenues.length, TOTAL_ROUNDS)} />
           <div className="flex-1 p-3 md:p-4">
             <RoundResult
               roundNumber={currentRoundIndex + 1}

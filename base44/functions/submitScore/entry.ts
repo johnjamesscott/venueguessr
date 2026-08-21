@@ -1,8 +1,12 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.43';
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
+    const user = await base44.auth.me().catch(() => null);
+    if (user?.role !== 'admin') {
+      return Response.json({ error: 'Admin access required' }, { status: 403 });
+    }
     const body = await req.json();
     const { player_name, email, total_score, rounds_played, avg_distance_km, icp_boosted } = body;
 
@@ -30,6 +34,7 @@ Deno.serve(async (req) => {
 
     return Response.json({ entry, position, competition });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('submitScore failed:', error?.message || 'Unknown error');
+    return Response.json({ error: 'Could not submit the score' }, { status: 500 });
   }
 });
