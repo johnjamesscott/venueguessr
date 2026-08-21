@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
-import { LayoutDashboard, Trophy, MapPin, Gift, Users, BarChart2, LogOut, Menu, X, Zap, Mail } from 'lucide-react';
+import { LayoutDashboard, Trophy, MapPin, Gift, Users, BarChart2, LogOut, Menu, Zap, Mail } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 
 const NAV = [

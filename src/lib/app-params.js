@@ -1,5 +1,11 @@
 const isNode = typeof window === 'undefined';
-const windowObj = isNode ? { localStorage: new Map() } : window;
+const memoryStorage = new Map();
+const nodeStorage = {
+	getItem: (key) => memoryStorage.get(key) ?? null,
+	setItem: (key, value) => memoryStorage.set(key, String(value)),
+	removeItem: (key) => memoryStorage.delete(key),
+};
+const windowObj = isNode ? { localStorage: nodeStorage } : window;
 const storage = windowObj.localStorage;
 
 const toSnakeCase = (str) => {

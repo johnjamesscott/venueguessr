@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function GameHeader({ level, round, totalRounds }) {
+export default function GameHeader({ level = null, round = null, totalRounds = null }) {
   const label = round != null
     ? `Round ${round}${totalRounds ? ` / ${totalRounds}` : ''}`
     : level != null ? `Level ${level}` : null;

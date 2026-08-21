@@ -4,6 +4,7 @@ import LeaderboardScroller from './LeaderboardScroller';
 
 const BG_IMAGE = 'https://media.base44.com/images/public/69fb297293cfcce3424dad36/78e67546d_iPhone17-211.png';
 
+/** @type {Record<string, React.CSSProperties>} */
 const styles = {
   container: {
     position: 'fixed',
@@ -123,7 +124,15 @@ const styles = {
   },
 };
 
-export default function SplashScreen({ onStart, onDemo, icpBoostArmed, onToggleIcpBoost }) {
+export default function SplashScreen({
+  onStart,
+  onDemo,
+  leaderboardData,
+  leaderboardLoading,
+  leaderboardError,
+  icpBoostArmed,
+  onToggleIcpBoost,
+}) {
   const tapCountRef = useRef(0);
   const tapTimerRef = useRef(null);
   const [flash, setFlash] = useState(false);
@@ -228,8 +237,8 @@ export default function SplashScreen({ onStart, onDemo, icpBoostArmed, onToggleI
           zIndex: 2,
           pointerEvents: 'none',
         }}>
-          <div className="splash-globe-wrapper" style={{ width: 2800, height: 2800, flexShrink: 0 }}>
-            <SplineGlobe size={2800} />
+          <div className="splash-globe-wrapper" style={{ width: 'min(1800px, 175vmax)', height: 'min(1800px, 175vmax)', flexShrink: 0 }}>
+            <SplineGlobe size="100%" />
           </div>
         </div>
 
@@ -249,11 +258,10 @@ export default function SplashScreen({ onStart, onDemo, icpBoostArmed, onToggleI
               className="splash-btn"
               style={styles.button}
               onClick={handleStart}
-              onTouchEnd={handleStart}
             >
               <span className="splash-btn-text">Start Game</span>
             </button>
-            <span className="credit-flash" style={{
+            <span className="credit-flash" aria-live="polite" style={{
               fontFamily: 'Montserrat, sans-serif',
               fontWeight: 800,
               fontSize: 39,
@@ -262,7 +270,7 @@ export default function SplashScreen({ onStart, onDemo, icpBoostArmed, onToggleI
               color: '#ffffff',
               textShadow: '0 0 10px rgba(255,255,255,0.6)',
             }}>
-              ★ 1 Credit ★
+              ★ {icpBoostArmed ? '2 Credits' : '1 Credit'} ★
             </span>
           </div>
         </div>
@@ -287,7 +295,6 @@ export default function SplashScreen({ onStart, onDemo, icpBoostArmed, onToggleI
               textTransform: 'uppercase',
             }}
             onClick={handleDemo}
-            onTouchEnd={handleDemo}
           >
             Play Demo
           </button>
@@ -299,7 +306,7 @@ export default function SplashScreen({ onStart, onDemo, icpBoostArmed, onToggleI
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#FF4444', display: 'inline-block', boxShadow: '0 0 6px #FF4444' }} />
             Current High Scores
           </div>
-          <LeaderboardScroller />
+          <LeaderboardScroller data={leaderboardData} isLoading={leaderboardLoading} hasError={leaderboardError} />
         </div>
       </div>
     </>

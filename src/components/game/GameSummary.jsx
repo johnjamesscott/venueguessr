@@ -4,7 +4,7 @@ import { getRating } from '@/utils/scoring';
 import Leaderboard from '@/components/game/Leaderboard';
 import GameHeader from '@/components/game/GameHeader';
 
-export default function GameSummary({ results, venues, totalScore, playerEmail, onPlayAgain }) {
+export default function GameSummary({ results, venues, totalScore, playerEntryId, onPlayAgain, competitionId = null }) {
   const avgMiles = results.length > 0
     ? (results.reduce((sum, r) => sum + (r.distance?.miles || 0), 0) / results.length).toFixed(1)
     : 0;
@@ -34,7 +34,7 @@ export default function GameSummary({ results, venues, totalScore, playerEmail, 
             {rating.label}
           </div>
           <p className="text-hb-text-muted text-sm mt-2">
-            Avg distance: {avgMiles} miles across {results.length} rounds
+            Avg distance: {avgMiles} miles across {results.length} round{results.length === 1 ? '' : 's'}
           </p>
         </div>
 
@@ -75,7 +75,7 @@ export default function GameSummary({ results, venues, totalScore, playerEmail, 
         </div>
 
         {/* Leaderboard */}
-        <Leaderboard highlightEmail={playerEmail} />
+        <Leaderboard highlightEntryId={playerEntryId} competitionId={competitionId} />
 
         {/* Play again */}
         <button

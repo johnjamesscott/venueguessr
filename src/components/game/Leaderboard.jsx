@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import React from 'react';
 import { Trophy, Medal } from 'lucide-react';
+import { EMPTY_LEADERBOARD, usePublicLeaderboard } from '@/hooks/usePublicLeaderboard';
 
 const RANK_STYLES = [
   { bg: 'bg-yellow-500/20', text: 'text-yellow-400', border: 'border-yellow-500/30' },
@@ -8,38 +8,9 @@ const RANK_STYLES = [
   { bg: 'bg-orange-700/20', text: 'text-orange-400', border: 'border-orange-700/30' },
 ];
 
-export default function Leaderboard({ highlightEmail, competitionId }) {
-  const [entries, setEntries] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    setLoading(true);
-
-    const fetchEntries = async () => {
-      // If no competitionId passed, fetch the active one
-      let compId = competitionId;
-      if (!compId) {
-        const res = await base44.functions.invoke('getActiveCompetition', {});
-        compId = res?.data?.competition?.id || null;
-      }
-
-      if (!compId) {
-        setEntries([]);
-        setLoading(false);
-        return;
-      }
-
-      const data = await base44.entities.LeaderboardEntry.filter(
-        { competition_id: compId },
-        '-total_score',
-        10
-      );
-      setEntries(data);
-      setLoading(false);
-    };
-
-    fetchEntries().catch(() => setLoading(false));
-  }, [competitionId]);
+export default function Leaderboard({ highlightEntryId = null, competitionId = null }) {
+  const { data = EMPTY_LEADERBOARD, isLoading: loading, isError } = usePublicLeaderboard({ competitionId });
+  const entries = data.entries.slice(0, 10);
 
   return (
     <div className="bg-hb-surface rounded-hb-lg border border-hb-border overflow-hidden">
@@ -57,14 +28,18 @@ export default function Leaderboard({ highlightEmail, competitionId }) {
               <div className="w-16 h-3 bg-hb-border rounded" />
             </div>
           ))
+        ) : isError ? (
+          <div className="px-5 py-8 text-center text-hb-text-muted text-sm">
+            Scores temporarily unavailable.
+          </div>
         ) : entries.length === 0 ? (
           <div className="px-5 py-8 text-center text-hb-text-muted text-sm">
             No entries yet — be the first!
           </div>
         ) : (
           entries.map((entry, i) => {
-            const style = RANK_STYLES[i] || {};
-            const isHighlighted = highlightEmail && entry.email === highlightEmail;
+            const style = RANK_STYLES[i] || { bg: '', text: '', border: '' };
+            const isHighlighted = highlightEntryId && entry.id === highlightEntryId;
             return (
               <div
                 key={entry.id}

@@ -1,19 +1,43 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.43';
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-    const { lead_id } = body;
+    const leadId = typeof body?.lead_id === 'string' ? body.lead_id.trim() : '';
+    const submissionToken = typeof body?.submission_token === 'string'
+      ? body.submission_token.trim().slice(0, 100)
+      : '';
+    let resolvedLeadId = leadId;
 
-    if (!lead_id) {
-      return Response.json({ error: 'lead_id is required' }, { status: 400 });
+    if (submissionToken) {
+      const submissions = await base44.asServiceRole.entities.PendingSubmission.filter({ token: submissionToken });
+      const submission = submissions[0];
+      if (!submission || submission.status !== 'completed' || !submission.lead_id) {
+        return Response.json({ error: 'Completed score submission not found' }, { status: 404 });
+      }
+      resolvedLeadId = submission.lead_id;
+    } else {
+      const user = await base44.auth.me().catch(() => null);
+      if (user?.role !== 'admin') {
+        return Response.json({ error: 'Admin access required' }, { status: 403 });
+      }
     }
 
-    const leads = await base44.asServiceRole.entities.Lead.filter({ id: lead_id });
+    if (!resolvedLeadId) {
+      return Response.json({ error: 'lead_id or submission_token is required' }, { status: 400 });
+    }
+
+    const leads = await base44.asServiceRole.entities.Lead.filter({ id: resolvedLeadId });
     const lead = leads[0];
     if (!lead) {
       return Response.json({ error: 'Lead not found' }, { status: 404 });
+    }
+    if (lead.mailjet_synced === true) {
+      return Response.json({ success: true, already_synced: true });
+    }
+    if (lead.consent !== true) {
+      return Response.json({ error: 'Lead has not consented to contact' }, { status: 403 });
     }
 
     // Get competition name if available
@@ -47,10 +71,27 @@ Deno.serve(async (req) => {
       }),
     });
 
-    const contactData = await contactRes.json();
+    let contactData = await contactRes.json();
+    // Mailjet can return 400 when the contact already exists. The contact-data
+    // update below remains the authoritative sync step for that case.
+    if (!contactRes.ok && contactRes.status !== 400) {
+      console.error('Mailjet contact sync failed:', contactRes.status);
+      return Response.json({ error: 'Mailjet contact sync failed' }, { status: 502 });
+    }
+    if (contactRes.status === 400) {
+      const existingContactRes = await fetch(
+        `https://api.mailjet.com/v3/REST/contact/${encodeURIComponent(lead.email)}`,
+        { headers: { 'Authorization': `Basic ${credentials}` } },
+      );
+      if (!existingContactRes.ok) {
+        console.error('Mailjet existing contact lookup failed:', existingContactRes.status);
+        return Response.json({ error: 'Mailjet contact lookup failed' }, { status: 502 });
+      }
+      contactData = await existingContactRes.json();
+    }
 
     // Update contact properties
-    await fetch(`https://api.mailjet.com/v3/REST/contactdata/${lead.email}`, {
+    const contactDataRes = await fetch(`https://api.mailjet.com/v3/REST/contactdata/${encodeURIComponent(lead.email)}`, {
       method: 'PUT',
       headers: {
         'Authorization': `Basic ${credentials}`,
@@ -66,10 +107,18 @@ Deno.serve(async (req) => {
         ],
       }),
     });
+    if (!contactDataRes.ok) {
+      console.error('Mailjet contact property sync failed:', contactDataRes.status);
+      return Response.json({ error: 'Mailjet contact property sync failed' }, { status: 502 });
+    }
 
     // Add to list if configured
     if (MAILJET_LIST_ID) {
-      await fetch(`https://api.mailjet.com/v3/REST/listrecipient`, {
+      const contactId = contactData.Data?.[0]?.ID;
+      if (!contactId) {
+        return Response.json({ error: 'Mailjet contact ID was unavailable' }, { status: 502 });
+      }
+      const listRes = await fetch('https://api.mailjet.com/v3/REST/listrecipient', {
         method: 'POST',
         headers: {
           'Authorization': `Basic ${credentials}`,
@@ -80,13 +129,18 @@ Deno.serve(async (req) => {
           ListID: parseInt(MAILJET_LIST_ID),
         }),
       });
+      if (!listRes.ok && listRes.status !== 400) {
+        console.error('Mailjet list sync failed:', listRes.status);
+        return Response.json({ error: 'Mailjet list sync failed' }, { status: 502 });
+      }
     }
 
     // Mark as synced
-    await base44.asServiceRole.entities.Lead.update(lead_id, { mailjet_synced: true });
+    await base44.asServiceRole.entities.Lead.update(resolvedLeadId, { mailjet_synced: true });
 
     return Response.json({ success: true });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('syncLeadToMailjet failed:', error?.message || 'Unknown error');
+    return Response.json({ error: 'Could not sync the lead to Mailjet' }, { status: 500 });
   }
 });

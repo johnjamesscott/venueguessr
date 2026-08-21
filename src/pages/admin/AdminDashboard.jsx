@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Trophy, MapPin, Users, Zap, TrendingUp, Target, Calendar } from 'lucide-react';
 
-function StatCard({ label, value, icon: IconComp, sub }) {
+function StatCard({ label, value, icon: IconComp, sub = null }) {
   return (
     <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5">
       <div className="flex items-center justify-between mb-3">
@@ -21,26 +21,24 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const load = async () => {
-      const [competitions, venues, entries, leads] = await Promise.all([
+      const [competitions, venues] = await Promise.all([
         base44.entities.Competition.filter({ active: true }),
-        base44.entities.Venue.list(),
-        base44.entities.LeaderboardEntry.list(),
-        base44.entities.Lead.list(),
+        base44.entities.Venue.list('-created_date', 500),
       ]);
 
       const competition = competitions[0] || null;
       const today = new Date().toISOString().split('T')[0];
+      const [compEntries, compLeads] = await Promise.all([
+        competition
+          ? base44.entities.LeaderboardEntry.filter({ competition_id: competition.id }, '-created_date', 500)
+          : base44.entities.LeaderboardEntry.list('-created_date', 500),
+        competition
+          ? base44.entities.Lead.filter({ competition_id: competition.id }, '-created_date', 500)
+          : base44.entities.Lead.list('-created_date', 500),
+      ]);
 
-      const compEntries = competition
-        ? entries.filter(e => e.competition_id === competition.id)
-        : entries;
-
-      const compLeads = competition
-        ? leads.filter(l => l.competition_id === competition.id)
-        : leads;
-
-      const todayEntries = entries.filter(e => e.created_date?.startsWith(today));
-      const todayLeads = leads.filter(l => l.created_date?.startsWith(today));
+      const todayEntries = compEntries.filter(e => e.created_date?.startsWith(today));
+      const todayLeads = compLeads.filter(l => l.created_date?.startsWith(today));
       const topScore = compEntries.reduce((max, e) => Math.max(max, e.total_score || 0), 0);
       const convRate = compEntries.length > 0
         ? Math.round((compLeads.length / compEntries.length) * 100)

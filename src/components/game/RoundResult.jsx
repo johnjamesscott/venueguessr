@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { calculateScore, getRating } from '@/utils/scoring';
+import { getRating } from '@/utils/scoring';
 
 const redIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
@@ -53,8 +53,10 @@ function AnimatedScore({ target }) {
 }
 
 export default function RoundResult({ roundNumber, venue, guess, distance, score, onNext, isLastRound }) {
-  const guessPos = guess ? [guess.lat, guess.lng] : null;
-  const actualPos = [venue.lat, venue.lng];
+  /** @type {[number, number] | null} */
+  const guessPos = guess ? [Number(guess.lat), Number(guess.lng)] : null;
+  /** @type {[number, number]} */
+  const actualPos = [Number(venue.lat), Number(venue.lng)];
   const rating = getRating(score);
 
   return (

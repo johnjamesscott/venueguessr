@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { CheckCircle2, Trophy, ArrowRight } from 'lucide-react';
 
 const MEDAL = ['🥇', '🥈', '🥉'];
+const EMPTY_ERRORS = { form: '', firstName: '', lastName: '', email: '' };
 
 export default function Submit() {
   const [token, setToken] = useState(null);
@@ -10,7 +11,7 @@ export default function Submit() {
   const [pending, setPending] = useState(null);
   const [loadError, setLoadError] = useState(null);
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', company: '' });
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState(EMPTY_ERRORS);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState(null);
 
@@ -34,7 +35,7 @@ export default function Submit() {
   }, []);
 
   const validate = () => {
-    const errs = {};
+    const errs = { ...EMPTY_ERRORS };
     if (!form.firstName.trim()) errs.firstName = 'First name is required';
     if (!form.lastName.trim()) errs.lastName = 'Last name is required';
     if (!form.email.trim()) errs.email = 'Business email is required';
@@ -46,7 +47,7 @@ export default function Submit() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const errs = validate();
-    if (Object.keys(errs).length > 0) { setErrors(errs); return; }
+    if (Object.values(errs).some(Boolean)) { setErrors(errs); return; }
     setSubmitting(true);
     try {
       const res = await base44.functions.invoke('finalizePendingSubmission', {
@@ -58,7 +59,7 @@ export default function Submit() {
       });
       const data = res?.data;
       if (!data || data.error) {
-        setErrors({ form: data?.error || 'Submission failed. Please try again.' });
+        setErrors({ ...EMPTY_ERRORS, form: data?.error || 'Submission failed. Please try again.' });
         setSubmitting(false);
         return;
       }
@@ -69,7 +70,7 @@ export default function Submit() {
         leaderboard: data.leaderboard || [],
       });
     } catch (err) {
-      setErrors({ form: 'Submission failed. Please try again.' });
+      setErrors({ ...EMPTY_ERRORS, form: 'Submission failed. Please try again.' });
     }
     setSubmitting(false);
   };
@@ -228,6 +229,10 @@ export default function Submit() {
         </button>
       </form>
 
+      <p className="text-hb-text-muted text-xs text-center mt-4 leading-relaxed">
+        By saving your score, you agree that HeadBox may email your results and contact you about relevant venues and events.{' '}
+        <a href="https://www.headbox.com/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-hb-red hover:underline">Privacy policy</a>
+      </p>
       <p className="text-hb-text-muted text-xs text-center mt-5 leading-relaxed">
         HeadBox connects you to 100,000+ unique venues worldwide.
       </p>

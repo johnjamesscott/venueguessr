@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Search, Trash2, Download, RotateCcw, RefreshCw } from 'lucide-react';
+import { downloadCsv } from '@/utils/csv';
 
 export default function LeaderboardManager() {
   const [competitions, setCompetitions] = useState([]);
@@ -8,7 +9,7 @@ export default function LeaderboardManager() {
   const [entries, setEntries] = useState([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
-  const intervalRef = useRef();
+  const intervalRef = useRef(null);
 
   const load = async (compId) => {
     setLoading(true);
@@ -52,11 +53,7 @@ export default function LeaderboardManager() {
     filtered.forEach((e, i) => {
       rows.push([i + 1, e.player_name, e.email, e.total_score, e.rounds_played, e.avg_distance_km, e.created_date?.split('T')[0]]);
     });
-    const csv = rows.map(r => r.join(',')).join('\n');
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-    a.download = `leaderboard-${selectedComp || 'all'}.csv`;
-    a.click();
+    downloadCsv(`leaderboard-${selectedComp || 'all'}.csv`, rows);
   };
 
   const filtered = entries.filter(e => !search || e.player_name?.toLowerCase().includes(search.toLowerCase()) || e.email?.toLowerCase().includes(search.toLowerCase()));

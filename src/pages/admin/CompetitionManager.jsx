@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Plus, Edit2, CheckCircle, Archive, RotateCcw } from 'lucide-react';
 
-function CompetitionForm({ initial, onSave, onCancel }) {
+function CompetitionForm({ initial = null, onSave, onCancel }) {
   const [form, setForm] = useState(initial || { name: '', event_location: '', start_date: '', end_date: '', description: '' });
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 

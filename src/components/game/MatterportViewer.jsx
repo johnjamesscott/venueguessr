@@ -4,6 +4,12 @@ import { getEmbedUrl } from '@/data/venues';
 export default function MatterportViewer({ tourUrl, nextTourUrl, onError }) {
   const embedUrl = getEmbedUrl(tourUrl);
   const nextEmbedUrl = getEmbedUrl(nextTourUrl);
+  let trustedMessageOrigin = null;
+  try {
+    trustedMessageOrigin = embedUrl ? new URL(embedUrl, window.location.origin).origin : null;
+  } catch (_) {
+    // A malformed admin-entered URL is handled by the normal venue fallback.
+  }
   const iframeRef = useRef(null);
   const [errored, setErrored] = useState(false);
 
@@ -15,6 +21,7 @@ export default function MatterportViewer({ tourUrl, nextTourUrl, onError }) {
   // Detect Matterport "model not available" via postMessage
   useEffect(() => {
     const handleMessage = (e) => {
+      if (!trustedMessageOrigin || e.origin !== trustedMessageOrigin) return;
       try {
         const msg = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
         // Matterport SDK sends model.error or similar when unavailable
@@ -31,7 +38,7 @@ export default function MatterportViewer({ tourUrl, nextTourUrl, onError }) {
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [onError]);
+  }, [onError, trustedMessageOrigin]);
 
   // Fallback: poll iframe title for "Oops" text (fires once iframe loads)
   useEffect(() => {

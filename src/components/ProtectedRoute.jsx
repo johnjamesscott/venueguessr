@@ -9,8 +9,13 @@ const DefaultFallback = () => (
   </div>
 );
 
-export default function ProtectedRoute({ fallback = <DefaultFallback />, unauthenticatedElement }) {
-  const { isAuthenticated, isLoadingAuth, authChecked, authError, checkUserAuth } = useAuth();
+export default function ProtectedRoute({
+  fallback = <DefaultFallback />,
+  unauthenticatedElement = null,
+  unauthorizedElement = null,
+  requiredRole = null,
+}) {
+  const { user, isAuthenticated, isLoadingAuth, authChecked, authError, checkUserAuth } = useAuth();
 
   useEffect(() => {
     if (!authChecked && !isLoadingAuth) {
@@ -31,6 +36,10 @@ export default function ProtectedRoute({ fallback = <DefaultFallback />, unauthe
 
   if (!isAuthenticated) {
     return unauthenticatedElement;
+  }
+
+  if (requiredRole && user?.role !== requiredRole) {
+    return unauthorizedElement;
   }
 
   return <Outlet />;
