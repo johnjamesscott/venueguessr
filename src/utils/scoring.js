@@ -4,9 +4,14 @@
 
 const MAX_BASE_SCORE = 5000;
 
-// ICP Boost: multiplies a high-value prospect's final total score when armed on the kiosk.
+// ICP Boost: applied to each round score when armed for the current game.
 // Adjust this single constant to control the boost strength.
-export const ICP_BOOST_FACTOR = 2;
+export const ICP_BOOST_FACTOR = 1.25;
+
+export function applyIcpBoost(score, enabled = false) {
+  const safeScore = Number.isFinite(score) ? Math.max(0, score) : 0;
+  return enabled ? Math.round(safeScore * ICP_BOOST_FACTOR) : safeScore;
+}
 
 /**
  * Calculate score based on distance only (accuracy). Time is no longer rewarded.

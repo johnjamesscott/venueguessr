@@ -1,8 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.43';
 
 const MAX_ROUNDS = 3;
-const MAX_ROUND_SCORE = 5_000;
-const ICP_BOOST_FACTOR = 2;
+const MAX_BASE_ROUND_SCORE = 5_000;
+const ICP_BOOST_FACTOR = 1.25;
 
 const clampNumber = (value, min, max) => {
   const number = Number(value);
@@ -19,14 +19,18 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
     const { competition_id, round_results, icp_boosted } = body;
+    const boosted = icp_boosted === true;
 
     const sanitizedRounds = Array.isArray(round_results)
-      ? round_results.slice(0, MAX_ROUNDS).map((round) => ({
-        venue_name: cleanText(round?.venue_name, 120) || 'Unknown Venue',
-        city: cleanText(round?.city, 80),
-        score: Math.round(clampNumber(round?.score, 0, MAX_ROUND_SCORE)),
-        distance_km: clampNumber(round?.distance_km, 0, 20_000),
-      }))
+      ? round_results.slice(0, MAX_ROUNDS).map((round) => {
+        const baseScore = Math.round(clampNumber(round?.score, 0, MAX_BASE_ROUND_SCORE));
+        return {
+          venue_name: cleanText(round?.venue_name, 120) || 'Unknown Venue',
+          city: cleanText(round?.city, 80),
+          score: boosted ? Math.round(baseScore * ICP_BOOST_FACTOR) : baseScore,
+          distance_km: clampNumber(round?.distance_km, 0, 20_000),
+        };
+      })
       : [];
 
     if (sanitizedRounds.length === 0) {
@@ -40,9 +44,7 @@ Deno.serve(async (req) => {
       ? requestedCompetitionId
       : activeCompetition?.id || null;
 
-    const baseScore = sanitizedRounds.reduce((sum, round) => sum + round.score, 0);
-    const boosted = icp_boosted === true;
-    const totalScore = boosted ? baseScore * ICP_BOOST_FACTOR : baseScore;
+    const totalScore = sanitizedRounds.reduce((sum, round) => sum + round.score, 0);
     const avgDistance = sanitizedRounds.reduce((sum, round) => sum + round.distance_km, 0)
       / sanitizedRounds.length;
 
