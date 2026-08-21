@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React from 'react';
 import SplineGlobe from './SplineGlobe';
 import LeaderboardScroller from './LeaderboardScroller';
 
@@ -133,23 +133,6 @@ export default function SplashScreen({
   icpBoostArmed,
   onToggleIcpBoost,
 }) {
-  const tapCountRef = useRef(0);
-  const tapTimerRef = useRef(null);
-  const [flash, setFlash] = useState(false);
-
-  // Hidden trigger: 5 quick taps on the HeadBox logo toggles the ICP boost.
-  const handleLogoTap = () => {
-    tapCountRef.current += 1;
-    if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
-    tapTimerRef.current = setTimeout(() => { tapCountRef.current = 0; }, 1500);
-    if (tapCountRef.current >= 5) {
-      tapCountRef.current = 0;
-      onToggleIcpBoost?.();
-      setFlash(true);
-      setTimeout(() => setFlash(false), 1500);
-    }
-  };
-
   const handleStart = (e) => {
     e.preventDefault();
     onStart(1);
@@ -206,7 +189,7 @@ export default function SplashScreen({
 
         {/* Header — centred HeadBox logo */}
         <div style={styles.header}>
-          <div onClick={handleLogoTap} style={{ display: 'flex', alignItems: 'center', cursor: 'default', userSelect: 'none', WebkitTapHighlightColor: 'transparent' }}>
+          <div style={{ display: 'flex', alignItems: 'center', userSelect: 'none' }}>
             <img
               src="https://cdn.prod.website-files.com/63bd498079b1380a81c6e13b/63bd498079b1384ca2c6e19d_HeadBox-Logo-Brick-header.png"
               alt="HeadBox"
@@ -214,18 +197,6 @@ export default function SplashScreen({
             />
           </div>
         </div>
-
-        {/* Discreet ICP indicator — only the team sees this */}
-        {icpBoostArmed && (
-          <div style={{ position: 'fixed', top: 16, right: 20, zIndex: 50, pointerEvents: 'none' }}>
-            <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: '#AF231C', boxShadow: '0 0 6px #AF231C' }} />
-          </div>
-        )}
-        {flash && (
-          <div style={{ position: 'fixed', top: 24, left: '50%', transform: 'translateX(-50%)', background: 'rgba(20,20,20,0.92)', color: '#fff', fontSize: 14, fontWeight: 700, padding: '8px 18px', borderRadius: 8, zIndex: 100, letterSpacing: '0.5px', pointerEvents: 'none' }}>
-            ICP boost {icpBoostArmed ? 'armed' : 'disarmed'}
-          </div>
-        )}
 
         {/* Globe — absolute behind everything */}
         <div style={{
@@ -261,17 +232,32 @@ export default function SplashScreen({
             >
               <span className="splash-btn-text">Start Game</span>
             </button>
-            <span className="credit-flash" aria-live="polite" style={{
-              fontFamily: 'Montserrat, sans-serif',
-              fontWeight: 800,
-              fontSize: 39,
-              letterSpacing: '2px',
-              textTransform: 'uppercase',
-              color: '#ffffff',
-              textShadow: '0 0 10px rgba(255,255,255,0.6)',
-            }}>
+            <button
+              type="button"
+              className="credit-flash"
+              aria-label={`Switch to ${icpBoostArmed ? '1 Credit' : '2 Credits'}`}
+              aria-pressed={icpBoostArmed}
+              onClick={onToggleIcpBoost}
+              style={{
+                fontFamily: 'Montserrat, sans-serif',
+                fontWeight: 800,
+                fontSize: 39,
+                letterSpacing: '2px',
+                textTransform: 'uppercase',
+                color: '#ffffff',
+                textShadow: '0 0 10px rgba(255,255,255,0.6)',
+                background: 'transparent',
+                border: 'none',
+                borderRadius: 12,
+                padding: '8px 18px',
+                minHeight: 64,
+                cursor: 'pointer',
+                touchAction: 'manipulation',
+                WebkitTapHighlightColor: 'transparent',
+              }}
+            >
               ★ {icpBoostArmed ? '2 Credits' : '1 Credit'} ★
-            </span>
+            </button>
           </div>
         </div>
 
