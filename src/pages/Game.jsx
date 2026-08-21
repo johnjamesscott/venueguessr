@@ -1,6 +1,6 @@
-import React, { lazy, useState, useCallback, useRef } from 'react';
+import React, { lazy, useState, useCallback, useEffect, useRef } from 'react';
 import { calculateDistance } from '@/utils/distance';
-import { calculateScore, ICP_BOOST_FACTOR } from '@/utils/scoring';
+import { applyIcpBoost, calculateScore } from '@/utils/scoring';
 import { base44 } from '@/api/base44Client';
 import { EMPTY_LEADERBOARD, usePublicLeaderboard } from '@/hooks/usePublicLeaderboard';
 import {
@@ -56,14 +56,14 @@ export default function Game() {
   const [currentDistance, setCurrentDistance] = useState(null);
   const [preRoundCountdown, setPreRoundCountdown] = useState(false);
   const [currentScore, setCurrentScore] = useState(0);
+  const [currentBaseScore, setCurrentBaseScore] = useState(0);
   const [playerEntryId, setPlayerEntryId] = useState(null);
   const [showCelebration, setShowCelebration] = useState(false);
   const [isDemo, setIsDemo] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(ROUND_SECONDS);
   const [venuePool, setVenuePool] = useState([]);
-  const [icpBoostArmed, setIcpBoostArmed] = useState(() => {
-    try { return localStorage.getItem('vg_icp_boost') === '1'; } catch { return false; }
-  });
+  const [icpBoostArmed, setIcpBoostArmed] = useState(false);
+  const [gameIcpBoosted, setGameIcpBoosted] = useState(false);
   const {
     data: publicLeaderboard = EMPTY_LEADERBOARD,
     isLoading: leaderboardLoading,
@@ -73,12 +73,13 @@ export default function Game() {
   });
   const activeCompetition = publicLeaderboard.competition;
 
+  useEffect(() => {
+    // Remove the legacy persisted toggle so every fresh kiosk session starts at 1 Credit.
+    try { localStorage.removeItem('vg_icp_boost'); } catch {}
+  }, []);
+
   const toggleIcpBoost = useCallback(() => {
-    setIcpBoostArmed(prev => {
-      const next = !prev;
-      try { localStorage.setItem('vg_icp_boost', next ? '1' : '0'); } catch {}
-      return next;
-    });
+    setIcpBoostArmed(prev => !prev);
   }, []);
 
   const resetRoundState = () => {
@@ -86,6 +87,7 @@ export default function Game() {
     setGuessLocked(false);
     setCurrentDistance(null);
     setCurrentScore(0);
+    setCurrentBaseScore(0);
     setTimerActive(false);
     setTimeRemaining(ROUND_SECONDS);
     setPreRoundCountdown(true);
@@ -116,9 +118,11 @@ export default function Game() {
     setResults([]);
     setPlayerEntryId(null);
     setIsDemo(true);
+    setGameIcpBoosted(icpBoostArmed);
+    setIcpBoostArmed(false);
     resetRoundState();
     setGameState(GAME_STATES.PLAYING);
-  }, []);
+  }, [icpBoostArmed]);
 
   const startGame = useCallback(async () => {
     unlockAudio();
@@ -132,6 +136,8 @@ export default function Game() {
         setResults([]);
         setPlayerEntryId(null);
         setIsDemo(false);
+        setGameIcpBoosted(icpBoostArmed);
+        setIcpBoostArmed(false);
         resetRoundState();
         setGameState(GAME_STATES.PLAYING);
         return;
@@ -139,7 +145,7 @@ export default function Game() {
     } catch (_) {}
     // Fallback: no venues in Base44 yet
     alert('No active venues found. Please add venues in the admin panel.');
-  }, []);
+  }, [icpBoostArmed]);
 
   const handleTourError = useCallback(() => {
     setVenuePool(pool => {
@@ -163,7 +169,8 @@ export default function Game() {
     if (guessLocked) return;
     const venue = shuffledVenues[currentRoundIndex];
     const dist = guess ? calculateDistance(guess.lat, guess.lng, venue.lat, venue.lng) : null;
-    const score = dist ? calculateScore(dist.km, lockedTimeRemaining ?? timeRemaining, ROUND_SECONDS) : 0;
+    const baseScore = dist ? calculateScore(dist.km, lockedTimeRemaining ?? timeRemaining, ROUND_SECONDS) : 0;
+    const score = applyIcpBoost(baseScore, gameIcpBoosted);
 
     playLockSound();
     if (score >= GOOD_SCORE_THRESHOLD) {
@@ -176,11 +183,12 @@ export default function Game() {
 
     setCurrentGuess(guess);
     setCurrentDistance(dist);
+    setCurrentBaseScore(baseScore);
     setCurrentScore(score);
     setGuessLocked(true);
     setTimerActive(false);
     setGameState(GAME_STATES.ROUND_RESULT);
-  }, [guessLocked, shuffledVenues, currentRoundIndex]);
+  }, [guessLocked, shuffledVenues, currentRoundIndex, timeRemaining, gameIcpBoosted]);
 
   const handleTimerExpire = useCallback(() => {
     if (!guessLocked) lockGuess(currentGuess, 0);
@@ -195,7 +203,8 @@ export default function Game() {
     const venue = shuffledVenues[currentRoundIndex];
     setResults(prev => [...prev, {
       venueId: venue.id, venueName: venue.venueName, city: venue.city,
-      guess: currentGuess, distance: currentDistance, score: currentScore,
+      guess: currentGuess, distance: currentDistance,
+      baseScore: currentBaseScore, score: currentScore,
     }]);
     const isLastRound = currentRoundIndex >= Math.min(shuffledVenues.length, TOTAL_ROUNDS) - 1;
     if (isLastRound && isDemo) {
@@ -208,11 +217,18 @@ export default function Game() {
       setGuessLocked(false);
       setCurrentDistance(null);
       setCurrentScore(0);
+      setCurrentBaseScore(0);
       setTimerActive(false);
       setPreRoundCountdown(true);
       setGameState(GAME_STATES.PLAYING);
     }
-  }, [currentRoundIndex, shuffledVenues, currentGuess, currentDistance, currentScore, isDemo]);
+  }, [currentRoundIndex, shuffledVenues, currentGuess, currentDistance, currentBaseScore, currentScore, isDemo]);
+
+  const handlePlayAgain = useCallback(() => {
+    setIcpBoostArmed(false);
+    setGameIcpBoosted(false);
+    setGameState(GAME_STATES.SPLASH);
+  }, []);
 
   const handleContactSubmit = useCallback((_formData, submissionResult) => {
     setPlayerEntryId(submissionResult?.entry_id || null);
@@ -260,23 +276,21 @@ export default function Game() {
   }
 
   if (gameState === GAME_STATES.SUMMARY) {
-    const baseTotal = results.reduce((sum, r) => sum + (r.score || 0), 0);
-    const totalScore = icpBoostArmed ? Math.round(baseTotal * ICP_BOOST_FACTOR) : baseTotal;
+    const totalScore = results.reduce((sum, r) => sum + (r.score || 0), 0);
     return (
       <GameSummary
         results={results}
         venues={shuffledVenues}
         totalScore={totalScore}
         playerEntryId={playerEntryId}
-        onPlayAgain={() => setGameState(GAME_STATES.SPLASH)}
+        onPlayAgain={handlePlayAgain}
         competitionId={activeCompetition?.id}
       />
     );
   }
 
   if (gameState === GAME_STATES.CONTACT) {
-    const baseTotal = results.reduce((sum, r) => sum + (r.score || 0), 0);
-    const totalScore = icpBoostArmed ? Math.round(baseTotal * ICP_BOOST_FACTOR) : baseTotal;
+    const totalScore = results.reduce((sum, r) => sum + (r.score || 0), 0);
     const withDist = results.filter(r => r.distance);
     const avgKm = withDist.length > 0
       ? withDist.reduce((s, r) => s + (r.distance?.km || 0), 0) / withDist.length : 0;
@@ -289,11 +303,11 @@ export default function Game() {
           roundResults={results.map(r => ({
             venue_name: r.venueName,
             city: r.city,
-            score: r.score,
+            score: r.baseScore ?? r.score,
             distance_km: r.distance?.km || 0,
           }))}
           avgDistanceKm={Math.round(avgKm)}
-          icpBoosted={icpBoostArmed}
+          icpBoosted={gameIcpBoosted}
           onManualSubmit={handleContactSubmit}
           onSubmissionComplete={handleRemoteContactComplete}
           onSkip={handleContactSkip}
