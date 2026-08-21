@@ -211,14 +211,14 @@ export default function QrContactScreen({
               trackEvent('kiosk_manual_form_opened');
               setMode('manual');
             }}
-            className="flex items-center gap-2 text-hb-text-muted hover:text-white text-sm font-medium transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-hb-border bg-hb-surface text-hb-text-muted hover:text-white hover:border-hb-text-muted text-sm font-semibold transition-colors"
           >
             <Pencil size={14} />
             Enter details here instead
           </button>
           <button
             onClick={onSkip}
-            className="mt-1 px-5 py-2.5 rounded-full border border-hb-border bg-hb-surface text-hb-text-muted hover:text-white hover:border-hb-text-muted text-sm font-semibold transition-colors"
+            className="mt-1 text-hb-text-muted/70 hover:text-white text-xs font-medium transition-colors hover:underline underline-offset-4"
           >
             Skip & view results
           </button>
