@@ -52,24 +52,26 @@ const styles = {
     minHeight: 0,
   },
   title: {
-    fontSize: 126,
+    fontSize: 'clamp(48px, 12.8vw, 126px)',
     fontWeight: 900,
     color: '#fff',
     letterSpacing: '1px',
     margin: 0,
     lineHeight: 1.0,
+    maxWidth: '100%',
+    whiteSpace: 'nowrap',
     textShadow: '0 2px 24px rgba(0,0,0,0.8), 0 0 40px rgba(255,68,68,0.5)',
     animation: 'fadeInScale 0.8s ease-out 0.3s both',
   },
   subtitle: {
-    fontSize: 45,
+    fontSize: 'clamp(28px, 4.2vw, 45px)',
     fontWeight: 400,
     color: 'rgba(255,255,255,0.8)',
     margin: '10px 0 0',
     textShadow: '0 1px 8px rgba(0,0,0,0.6)',
   },
   tagline: {
-    fontSize: 36,
+    fontSize: 'clamp(22px, 3.35vw, 36px)',
     fontWeight: 500,
     color: 'rgba(255,255,255,0.55)',
     margin: '4px 0 0',
@@ -87,12 +89,12 @@ const styles = {
   button: {
     background: '#fff',
     color: '#8B1A1A',
-    fontSize: 48,
+    fontSize: 'clamp(34px, 4.45vw, 48px)',
     fontWeight: 700,
     fontFamily: 'Montserrat, sans-serif',
     border: 'none',
     borderRadius: 50,
-    padding: '28px 80px',
+    padding: 'clamp(18px, 2.6vw, 28px) clamp(48px, 7.4vw, 80px)',
     cursor: 'pointer',
     letterSpacing: '0.5px',
     boxShadow: '0 4px 20px rgba(0,0,0,0.4), 0 0 20px rgba(255,255,255,0.15)',
@@ -112,7 +114,7 @@ const styles = {
     overflow: 'hidden',
   },
   leaderboardTitle: {
-    fontSize: 33,
+    fontSize: 'clamp(25px, 3.05vw, 33px)',
     fontWeight: 700,
     color: 'rgba(255,255,255,0.5)',
     letterSpacing: '1.5px',
@@ -196,7 +198,7 @@ export default function SplashScreen({
             <img
               src="https://cdn.prod.website-files.com/63bd498079b1380a81c6e13b/63bd498079b1384ca2c6e19d_HeadBox-Logo-Brick-header.png"
               alt="HeadBox"
-              style={{ height: 256, objectFit: 'contain', filter: 'brightness(0) invert(1)', opacity: 0.95, pointerEvents: 'none' }}
+              style={{ height: 'clamp(160px, 23.7vw, 256px)', maxWidth: 'calc(100vw - 32px)', objectFit: 'contain', filter: 'brightness(0) invert(1)', opacity: 0.95, pointerEvents: 'none' }}
             />
           </div>
         </div>
@@ -218,7 +220,7 @@ export default function SplashScreen({
 
         {/* Main — title + subtitle centred over globe */}
         <div style={styles.main}>
-          <div style={{ textAlign: 'center', zIndex: 20, pointerEvents: 'none' }}>
+          <div style={{ width: '100%', maxWidth: '100%', textAlign: 'center', zIndex: 20, pointerEvents: 'none' }}>
             <h1 className="splash-title" style={styles.title}>VenueGuessr</h1>
             <p className="splash-subtitle" style={styles.subtitle}>Test your venue knowledge</p>
             <p className="splash-tagline" style={styles.tagline}>Drop in. Place a pin. Play to win.</p>
@@ -251,7 +253,7 @@ export default function SplashScreen({
               style={{
                 fontFamily: 'Montserrat, sans-serif',
                 fontWeight: 800,
-                fontSize: 39,
+                fontSize: 'clamp(28px, 3.6vw, 39px)',
                 letterSpacing: '2px',
                 textTransform: 'uppercase',
                 color: '#ffffff',
@@ -259,8 +261,8 @@ export default function SplashScreen({
                 background: 'transparent',
                 border: 'none',
                 borderRadius: 12,
-                padding: '8px 18px',
-                minHeight: 64,
+                padding: 'clamp(5px, 0.75vw, 8px) 18px',
+                minHeight: 'clamp(52px, 5.9vw, 64px)',
                 cursor: startMode ? 'wait' : 'pointer',
                 opacity: startMode ? 0.65 : 1,
                 touchAction: 'manipulation',
@@ -289,12 +291,12 @@ export default function SplashScreen({
             style={{
               background: '#1f1f1f',
               color: '#fff',
-              fontSize: 30,
+              fontSize: 'clamp(23px, 2.8vw, 30px)',
               fontWeight: 700,
               fontFamily: 'Montserrat, sans-serif',
               border: '2px solid rgba(255,255,255,0.5)',
               borderRadius: 50,
-              padding: '16px 56px',
+              padding: 'clamp(12px, 1.5vw, 16px) clamp(42px, 5.2vw, 56px)',
               letterSpacing: '0.5px',
               WebkitTapHighlightColor: 'transparent',
               touchAction: 'manipulation',
