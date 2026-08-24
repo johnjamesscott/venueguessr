@@ -466,8 +466,8 @@ export default function Game() {
       round_count: results.length,
       icp_boosted: gameIcpBoosted,
     });
-    setGameState(GAME_STATES.SUMMARY);
-  }, [gameIcpBoosted, results.length]);
+    resetKiosk();
+  }, [gameIcpBoosted, resetKiosk, results.length]);
 
   const mapRef = useRef(null);
 

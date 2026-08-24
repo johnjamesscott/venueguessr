@@ -1,6 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { X } from 'lucide-react';
-
 const EMPTY_ERRORS = { firstName: null, lastName: null, email: null, form: null };
 
 export default function ContactForm({ onSubmit, onSkip }) {
@@ -51,22 +49,22 @@ export default function ContactForm({ onSubmit, onSkip }) {
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex justify-center overflow-y-auto bg-black/80 p-4 backdrop-blur-sm transition-[padding] duration-200 ${keyboardOpen ? 'items-start' : 'items-center'}`}
+      className={`fixed inset-0 z-50 flex justify-center overflow-y-auto p-4 backdrop-blur-sm transition-[padding,background-color] duration-200 ${keyboardOpen ? 'items-start bg-black' : 'items-center bg-black/65'}`}
       style={{
         paddingBottom: keyboardOpen ? 'calc(clamp(300px, 38dvh, 430px) + 16px)' : undefined,
         overscrollBehavior: 'contain',
       }}
     >
-      <div className="kiosk-contact-form w-full max-w-md bg-hb-surface rounded-hb-lg border border-hb-border p-6 md:p-8 fade-in">
+      <div className="kiosk-contact-form w-full max-w-md bg-hb-surface/95 rounded-hb-lg border border-white/20 p-6 shadow-2xl md:p-8 fade-in">
         <div className="flex items-start justify-between mb-6">
           <div>
             <h2 className="text-white font-black text-2xl leading-tight">Well played!</h2>
             <p className="text-hb-text-muted text-sm mt-1">
-              Enter your details to see the leaderboard and discover 100k+ venues on HeadBox.
+              Enter your details to reveal your total score and see where you placed.
             </p>
           </div>
-          <button onClick={onSkip} disabled={submitting} className="text-hb-text-muted hover:text-white disabled:opacity-40 transition-colors ml-4 mt-1" aria-label="Skip">
-            <X size={18} />
+          <button onClick={onSkip} disabled={submitting} className="shrink-0 text-hb-text-muted hover:text-white disabled:opacity-40 transition-colors ml-4 mt-1 text-xs font-medium hover:underline underline-offset-4" aria-label="Skip and finish">
+            Skip and finish
           </button>
         </div>
 
