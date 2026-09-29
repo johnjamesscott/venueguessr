@@ -19,7 +19,9 @@ test('tile proxy keeps keys and provider errors server-side', async (t) => {
   globalThis.testCartoKey = '';
   assert.equal((await handler(request())).status, 503);
   globalThis.testCartoKey = 'test-secret';
-  t.mock.method(globalThis, 'fetch', async (url) => {
+  t.mock.method(globalThis, 'fetch', async (input, options) => {
+    const url = new URL(input);
+    assert.equal(options.redirect, 'manual');
     assert.equal(url.hostname, 'basemaps.cartocdn.com');
     assert.equal(url.searchParams.get('key'), 'test-secret');
     return new Response('png-bytes', { headers: { 'content-type': 'image/png', 'x-secret': 'test-secret' } });
