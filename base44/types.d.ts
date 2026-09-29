@@ -3,6 +3,7 @@ declare module 'npm:@base44/sdk@0.8.43' {
 }
 
 declare module 'base44:runtime' {
+  export const secrets: { get(name: string): string | undefined };
   export function waitUntil(promise: Promise<unknown>): void;
 }
 
