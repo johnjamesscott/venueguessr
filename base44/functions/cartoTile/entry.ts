@@ -20,13 +20,13 @@ export default async function cartoTile(req: Request) {
     url.searchParams.set('key', key);
     const upstream = await fetch(url, { signal: AbortSignal.timeout(10000), redirect: 'error' });
     if (!upstream.ok || !upstream.headers.get('content-type')?.includes('image/png')) {
-      return Response.json({ error: 'Map tiles are unavailable' }, { status: 502 });
+      return Response.json({ error: 'Map tiles are unavailable', providerStatus: upstream.status }, { status: 502 });
     }
     // Never forward provider headers, errors, or URLs: they could contain the key.
     return new Response(upstream.body, {
       headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=3600', 'X-Content-Type-Options': 'nosniff' },
     });
-  } catch {
-    return Response.json({ error: 'Map tiles are unavailable' }, { status: 502 });
+  } catch (error) {
+    return Response.json({ error: 'Map tiles are unavailable', reason: error instanceof TypeError ? 'request-failed' : 'provider-timeout' }, { status: 502 });
   }
 }
