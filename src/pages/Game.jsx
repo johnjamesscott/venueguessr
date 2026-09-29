@@ -4,6 +4,7 @@ import { applyIcpBoost, calculateScore } from '@/utils/scoring';
 import { base44 } from '@/api/base44Client';
 import { EMPTY_LEADERBOARD, usePublicLeaderboard } from '@/hooks/usePublicLeaderboard';
 import { useKioskInactivity } from '@/hooks/useKioskInactivity';
+import { useMapPreload } from '@/hooks/useMapPreload';
 import { useKioskInteractionGuards } from '@/hooks/useKioskInteractionGuards';
 import { DEFAULT_GAME_SETTINGS, normalizeGameSettings } from '@/utils/gameSettings';
 import { withTimeout } from '@/utils/withTimeout';
@@ -62,6 +63,7 @@ const venueToGame = (v) => ({
 });
 
 export default function Game() {
+  useMapPreload({ lat: 54.5, lng: -3.5, zoom: 5, height: undefined, sideInset: 32 });
   const [gameState, setGameState] = useState(GAME_STATES.SPLASH);
   const [shuffledVenues, setShuffledVenues] = useState([]);
   const [currentRoundIndex, setCurrentRoundIndex] = useState(0);
