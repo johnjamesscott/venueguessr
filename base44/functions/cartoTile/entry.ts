@@ -18,7 +18,7 @@ export default async function cartoTile(req: Request) {
   try {
     const url = new URL(`https://basemaps.cartocdn.com/light_all/${z}/${x}/${y}.png`);
     url.searchParams.set('key', key);
-    const upstream = await fetch(url.toString(), { signal: AbortSignal.timeout(10000), redirect: 'error' });
+    const upstream = await fetch(url.toString(), { signal: AbortSignal.timeout(10000), redirect: 'manual' });
     if (!upstream.ok || !upstream.headers.get('content-type')?.includes('image/png')) {
       return Response.json({ error: 'Map tiles are unavailable', providerStatus: upstream.status }, { status: 502 });
     }
