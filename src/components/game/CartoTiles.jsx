@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { base44 } from '@/api/base44Client';
+import { mapTiles } from '@/utils/mapTiles';
 
 export default function CartoTiles() {
   const map = useMap();
@@ -25,13 +25,8 @@ export default function CartoTiles() {
           if (active) setFailed(failedTiles.size > 0);
           done(error, tile);
         };
-        base44.functions.fetch(`/cartoTile?z=${coords.z}&x=${coords.x}&y=${coords.y}`, {
-          signal: controller.signal,
-        }).then(async (response) => {
-          if (!response.ok || !response.headers.get('content-type')?.includes('image/png')) {
-            throw new Error('Map tiles are unavailable');
-          }
-          const blob = await response.blob();
+        // Shared requests survive round changes; abort only this tile's rendering.
+        mapTiles.get(coords).then((blob) => {
           if (!active || controller.signal.aborted) return;
           const objectUrl = URL.createObjectURL(blob);
           const release = () => URL.revokeObjectURL(objectUrl);
