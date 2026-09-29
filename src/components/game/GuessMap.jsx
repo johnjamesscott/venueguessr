@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
+import { MapContainer, Marker, useMapEvents, useMap } from 'react-leaflet';
+import CartoTiles from './CartoTiles';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -74,7 +75,7 @@ export default function GuessMap({
         minZoom={1}
         maxZoom={18}
       >
-        <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" attribution="" />
+        <CartoTiles />
         <ClickHandler onMapClick={handleMapClick} />
         <MapController mapRef={mapRef} />
         {markerPos && <Marker position={markerPos} icon={hbIcon} />}
