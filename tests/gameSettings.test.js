@@ -22,6 +22,7 @@ test('game settings support the public nested settings shape', () => {
       kioskIdleSeconds: 120,
     },
   }), {
+    ...DEFAULT_GAME_SETTINGS,
     icpMultiplier: 1.4,
     roundCount: 4,
     roundSeconds: 45,
@@ -36,9 +37,21 @@ test('game settings clamp admin values to kiosk-safe bounds', () => {
     round_seconds: 2,
     kiosk_idle_seconds: 999,
   }), {
+    ...DEFAULT_GAME_SETTINGS,
     icpMultiplier: 2,
     roundCount: 5,
     roundSeconds: 15,
     kioskIdleSeconds: 300,
   });
+});
+
+test('competition map settings preserve zero and clamp invalid bounds', () => {
+  const zero = normalizeGameSettings({ map_latitude: 0, map_longitude: 0, map_zoom: 2 });
+  assert.equal(zero.mapLatitude, 0);
+  assert.equal(zero.mapLongitude, 0);
+  assert.equal(zero.mapZoom, 2);
+  const bounded = normalizeGameSettings({ settings: { mapLatitude: -100, mapLongitude: 200, mapZoom: 30 } });
+  assert.equal(bounded.mapLatitude, -85);
+  assert.equal(bounded.mapLongitude, 180);
+  assert.equal(bounded.mapZoom, 18);
 });

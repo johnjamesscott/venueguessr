@@ -1,4 +1,7 @@
 export const DEFAULT_GAME_SETTINGS = Object.freeze({
+  mapLatitude: 54.5,
+  mapLongitude: -3.5,
+  mapZoom: 5,
   icpMultiplier: 1.25,
   roundCount: 3,
   roundSeconds: 30,
@@ -16,6 +19,9 @@ const clamp = (value, fallback, min, max, integer = false) => {
 export function normalizeGameSettings(value = {}) {
   const source = value?.settings || value || {};
   return {
+    mapLatitude: clamp(source.mapLatitude ?? source.map_latitude, 54.5, -85, 85),
+    mapLongitude: clamp(source.mapLongitude ?? source.map_longitude, -3.5, -180, 180),
+    mapZoom: clamp(source.mapZoom ?? source.map_zoom, 5, 1, 18, true),
     icpMultiplier: clamp(
       source.icpMultiplier ?? source.icp_multiplier,
       DEFAULT_GAME_SETTINGS.icpMultiplier,

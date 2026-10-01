@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { getEmbedUrl } from '@/data/venues';
 
-export default function MatterportViewer({ tourUrl, nextTourUrl, onError, onLoaded, loadTimeoutMs = 12_000 }) {
+export default function MatterportViewer({ tourUrl, active = true, onError, onLoaded, loadTimeoutMs = 30_000 }) {
   const embedUrl = getEmbedUrl(tourUrl);
-  const nextEmbedUrl = getEmbedUrl(nextTourUrl);
+
   let trustedMessageOrigin = null;
   try {
     trustedMessageOrigin = embedUrl ? new URL(embedUrl, window.location.origin).origin : null;
@@ -31,8 +31,14 @@ export default function MatterportViewer({ tourUrl, nextTourUrl, onError, onLoad
 
     errorReportedRef.current = true;
     setErrored(true);
-    onError?.();
-  }, [onError]);
+    // Report only when this tour becomes active.
+  }, []);
+
+  useEffect(() => {
+    if (!active) return;
+    if (errored) onError?.();
+    else if (loaded) onLoaded?.();
+  }, [active, errored, loaded, onError, onLoaded]);
 
   // Reset error state when tourUrl changes
   useEffect(() => {
@@ -116,24 +122,15 @@ export default function MatterportViewer({ tourUrl, nextTourUrl, onError, onLoad
         src={embedUrl}
         className="w-full h-full border-0"
         allow="xr-spatial-tracking; gyroscope; accelerometer; fullscreen"
+        tabIndex={active ? 0 : -1}
+        loading="eager"
         allowFullScreen
         title="Venue 3D Tour"
         onLoad={() => {
           setLoaded(true);
-          onLoaded?.();
         }}
       />
-      {/* Hidden preload iframe for next venue */}
-      {nextEmbedUrl && (
-        <iframe
-          key={nextEmbedUrl}
-          src={nextEmbedUrl}
-          className="border-0"
-          style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none', left: -9999 }}
-          allow="xr-spatial-tracking"
-          title="Preload next venue"
-        />
-      )}
+
     </div>
   );
 }

@@ -56,15 +56,49 @@
       "minimum": 30,
       "maximum": 300,
       "description": "Seconds without interaction before the kiosk resets"
+    },
+    "map_latitude": {
+      "type": "number",
+      "default": 54.5,
+      "minimum": -85,
+      "maximum": 85
+    },
+    "map_longitude": {
+      "type": "number",
+      "default": -3.5,
+      "minimum": -180,
+      "maximum": 180
+    },
+    "map_zoom": {
+      "type": "integer",
+      "default": 5,
+      "minimum": 1,
+      "maximum": 18
     }
   },
   "required": [
     "name"
   ],
   "rls": {
-    "read": { "user_condition": { "role": "admin" } },
-    "create": { "user_condition": { "role": "admin" } },
-    "update": { "user_condition": { "role": "admin" } },
-    "delete": { "user_condition": { "role": "admin" } }
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
   }
 }
