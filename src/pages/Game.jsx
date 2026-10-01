@@ -22,7 +22,6 @@ import ArcadeMapControls from '@/components/game/ArcadeMapControls';
 import GameSummary from '@/components/game/GameSummary';
 import PreRoundCountdown from '@/components/game/PreRoundCountdown';
 import CelebrationOverlay from '@/components/game/CelebrationOverlay';
-import SequentialTourPreloader from '@/components/game/SequentialTourPreloader';
 
 const GuessMap = lazy(() => import('@/components/game/GuessMap'));
 const RoundResult = lazy(() => import('@/components/game/RoundResult'));
@@ -63,7 +62,6 @@ const venueToGame = (v) => ({
 });
 
 export default function Game() {
-  useMapPreload({ lat: 54.5, lng: -3.5, zoom: 5, height: undefined, sideInset: 32 });
   const [gameState, setGameState] = useState(GAME_STATES.SPLASH);
   const [shuffledVenues, setShuffledVenues] = useState([]);
   const [currentRoundIndex, setCurrentRoundIndex] = useState(0);
@@ -107,6 +105,10 @@ export default function Game() {
   });
   const activeCompetition = publicLeaderboard.competition;
   const activeSettings = normalizeGameSettings(activeCompetition);
+  const mapSettings = gameState === GAME_STATES.SPLASH
+    ? normalizeGameSettings(preparedGameResponse?.data?.settings || activeCompetition)
+    : gameSettings;
+  useMapPreload({ lat: mapSettings.mapLatitude, lng: mapSettings.mapLongitude, zoom: mapSettings.mapZoom, height: undefined, sideInset: 32 });
 
   useEffect(() => {
     gameStateRef.current = gameState;
@@ -184,7 +186,7 @@ export default function Game() {
       preparedGameResponseRef.current = null;
       setPreparedGameResponse(null);
     }
-  }, [activeSettings.icpMultiplier, activeSettings.kioskIdleSeconds, activeSettings.roundCount, activeSettings.roundSeconds]);
+  }, [activeSettings.mapLatitude, activeSettings.mapLongitude, activeSettings.mapZoom, activeSettings.icpMultiplier, activeSettings.kioskIdleSeconds, activeSettings.roundCount, activeSettings.roundSeconds]);
 
   useKioskInactivity({
     timeoutSeconds: gameState === GAME_STATES.SPLASH
@@ -482,8 +484,8 @@ export default function Game() {
   const handleReset = useCallback(() => {
     const map = mapRef.current;
     if (!map) return;
-    map.setView([54.5, -3.5], 5, { animate: true });
-  }, []);
+    map.setView([gameSettings.mapLatitude, gameSettings.mapLongitude], gameSettings.mapZoom, { animate: true });
+  }, [gameSettings.mapLatitude, gameSettings.mapLongitude, gameSettings.mapZoom]);
 
   const currentVenue = shuffledVenues[currentRoundIndex];
   const isLastRound = currentRoundIndex >= shuffledVenues.length - 1;
@@ -493,148 +495,154 @@ export default function Game() {
     preparedSettings.roundCount,
   );
 
-  if (gameState === GAME_STATES.SPLASH) {
-    return (
-      <>
-        <SplashScreen
-          onStart={startGame}
-          onDemo={startDemo}
-          leaderboardData={publicLeaderboard}
-          leaderboardLoading={leaderboardLoading}
-          leaderboardError={leaderboardError}
-          icpBoostArmed={icpBoostArmed}
-          onToggleIcpBoost={toggleIcpBoost}
-          startMode={startMode}
-          startError={startError}
-          isOnline={isOnline}
-        />
-        <SequentialTourPreloader
-          active={isOnline && !startMode}
-          tourUrls={preparedTourUrls}
-        />
-      </>
-    );
-  }
+  const renderScreen = () => {
+    if (gameState === GAME_STATES.SPLASH) {
+      return (
+        <>
+          <SplashScreen
+            onStart={startGame}
+            onDemo={startDemo}
+            leaderboardData={publicLeaderboard}
+            leaderboardLoading={leaderboardLoading}
+            leaderboardError={leaderboardError}
+            icpBoostArmed={icpBoostArmed}
+            onToggleIcpBoost={toggleIcpBoost}
+            startMode={startMode}
+            startError={startError}
+            isOnline={isOnline}
+          />
+        </>
+      );
+    }
 
-  if (gameState === GAME_STATES.SUMMARY) {
-    const totalScore = results.reduce((sum, r) => sum + (r.score || 0), 0);
+    if (gameState === GAME_STATES.SUMMARY) {
+      const totalScore = results.reduce((sum, r) => sum + (r.score || 0), 0);
+      return (
+        <>
+          <OfflineBanner isOnline={isOnline} />
+          <GameSummary
+            results={results}
+            venues={shuffledVenues}
+            totalScore={totalScore}
+            playerEntryId={playerEntryId}
+            onPlayAgain={handlePlayAgain}
+            competitionId={gameCompetitionId}
+          />
+        </>
+      );
+    }
+
+    if (gameState === GAME_STATES.CONTACT) {
+      const totalScore = results.reduce((sum, r) => sum + (r.score || 0), 0);
+      const withDist = results.filter(r => r.distance);
+      const avgKm = withDist.length > 0
+        ? withDist.reduce((s, r) => s + (r.distance?.km || 0), 0) / withDist.length : 0;
+      return (
+        <div className="min-h-screen bg-hb-bg">
+          <OfflineBanner isOnline={isOnline} />
+          <GameHeader />
+          <QrContactScreen
+            totalScore={totalScore}
+            competitionId={gameCompetitionId}
+            roundResults={results.map(r => ({
+              venue_name: r.venueName,
+              city: r.city,
+              score: r.baseScore ?? r.score,
+              distance_km: r.distance?.km || 0,
+            }))}
+            avgDistanceKm={Math.round(avgKm)}
+            icpBoosted={gameIcpBoosted}
+            onManualSubmit={handleContactSubmit}
+            onSubmissionComplete={handleRemoteContactComplete}
+            onSkip={handleContactSkip}
+          />
+        </div>
+      );
+    }
+
     return (
-      <>
+      <div className="flex flex-col" style={{ pointerEvents: 'none', minHeight: '100dvh' }}>
         <OfflineBanner isOnline={isOnline} />
-        <GameSummary
-          results={results}
-          venues={shuffledVenues}
-          totalScore={totalScore}
-          playerEntryId={playerEntryId}
-          onPlayAgain={handlePlayAgain}
-          competitionId={gameCompetitionId}
-        />
-      </>
-    );
-  }
+        <CelebrationOverlay active={showCelebration} />
 
-  if (gameState === GAME_STATES.CONTACT) {
-    const totalScore = results.reduce((sum, r) => sum + (r.score || 0), 0);
-    const withDist = results.filter(r => r.distance);
-    const avgKm = withDist.length > 0
-      ? withDist.reduce((s, r) => s + (r.distance?.km || 0), 0) / withDist.length : 0;
-    return (
-      <div className="min-h-screen bg-hb-bg">
-        <OfflineBanner isOnline={isOnline} />
-        <GameHeader />
-        <QrContactScreen
-          totalScore={totalScore}
-          competitionId={gameCompetitionId}
-          roundResults={results.map(r => ({
-            venue_name: r.venueName,
-            city: r.city,
-            score: r.baseScore ?? r.score,
-            distance_km: r.distance?.km || 0,
-          }))}
-          avgDistanceKm={Math.round(avgKm)}
-          icpBoosted={gameIcpBoosted}
-          onManualSubmit={handleContactSubmit}
-          onSubmissionComplete={handleRemoteContactComplete}
-          onSkip={handleContactSkip}
-        />
-      </div>
-    );
-  }
-
-  return (
-    <div className="bg-hb-bg flex flex-col" style={{ minHeight: '100dvh' }}>
-      <OfflineBanner isOnline={isOnline} />
-      <CelebrationOverlay active={showCelebration} />
-
-      {gameState === GAME_STATES.PLAYING && currentVenue && (
-        <div style={{ position: 'fixed', inset: 0, background: '#121212' }}>
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 30, background: 'white' }}>
-            <GameHeader round={currentRoundIndex + 1} totalRounds={shuffledVenues.length} />
-          </div>
-          <div style={{ position: 'absolute', top: 88, left: 0, right: 0, bottom: 0, zIndex: -10, overflow: 'hidden' }}>
-            <MatterportViewer
-              key={`${currentVenue.id}-${viewerRetryKey}`}
-              tourUrl={currentVenue.tourUrl}
-              nextTourUrl={shuffledVenues[currentRoundIndex + 1]?.tourUrl}
-              onError={handleTourError}
-              onLoaded={handleVenueLoaded}
-              loadTimeoutMs={12_000}
-            />
-            {venueUnavailable && (
-              <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/80">
-                <div className="rounded-2xl border border-white/20 bg-[#1f1f1f] px-8 py-7 text-center shadow-2xl">
-                  <p className="text-white text-xl font-bold">This venue could not load</p>
-                  <p className="text-white/60 text-sm mt-2 mb-5">Check the connection, then try it again.</p>
-                  <button onClick={retryVenue} className="rounded-full bg-white px-6 py-3 font-bold text-[#8B1A1A]">Retry venue</button>
+        {gameState === GAME_STATES.PLAYING && currentVenue && (
+          <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 30, background: 'white' }}>
+              <GameHeader round={currentRoundIndex + 1} totalRounds={shuffledVenues.length} />
+            </div>
+            <div style={{ position: 'absolute', top: 88, left: 0, right: 0, bottom: 0, zIndex: 0, overflow: 'hidden' }}>
+              {venueUnavailable && (
+                <div className="absolute inset-0 z-40 pointer-events-auto flex items-center justify-center bg-black/80">
+                  <div className="rounded-2xl border border-white/20 bg-[#1f1f1f] px-8 py-7 text-center shadow-2xl">
+                    <p className="text-white text-xl font-bold">This venue could not load</p>
+                    <p className="text-white/60 text-sm mt-2 mb-5">Check the connection, then try it again.</p>
+                    <button onClick={retryVenue} className="rounded-full bg-white px-6 py-3 font-bold text-[#8B1A1A]">Retry venue</button>
+                  </div>
                 </div>
+              )}
+              {preRoundCountdown && <PreRoundCountdown onComplete={handlePreRoundComplete} />}
+            </div>
+            <div style={{ position: 'absolute', bottom: 0, left: '1em', right: '1em', height: '40vh', zIndex: 10, pointerEvents: 'auto' }}>
+              <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', borderTopLeftRadius: 48, borderTopRightRadius: 48, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 }}>
+                <GuessMap
+                  onGuessPlaced={handleGuessPlaced}
+                  guessLocked={guessLocked}
+                  currentGuess={currentGuess}
+                  onLockGuess={() => lockGuess(currentGuess, timeRemaining)}
+                  fill
+                  mapCenter={[gameSettings.mapLatitude, gameSettings.mapLongitude]}
+                  mapZoom={gameSettings.mapZoom}
+                  mapRef={mapRef}
+                />
               </div>
-            )}
-            {preRoundCountdown && <PreRoundCountdown onComplete={handlePreRoundComplete} />}
+            </div>
+            <ArcadeMapControls
+              onZoom={handleZoom}
+              onReset={handleReset}
+              timerSeconds={gameSettings.roundSeconds}
+              timerActive={timerActive}
+              onTimerExpire={handleTimerExpire}
+              onTimerTick={setTimeRemaining}
+              roundIndex={currentRoundIndex}
+            />
           </div>
-          <div style={{ position: 'absolute', bottom: 0, left: '1em', right: '1em', height: '40vh', zIndex: 10 }}>
-            <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', borderTopLeftRadius: 48, borderTopRightRadius: 48, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 }}>
-              <GuessMap
-                onGuessPlaced={handleGuessPlaced}
-                guessLocked={guessLocked}
-                currentGuess={currentGuess}
-                onLockGuess={() => lockGuess(currentGuess, timeRemaining)}
-                fill
-                mapCenter={[54.5, -3.5]}
-                mapZoom={5}
-                mapRef={mapRef}
+        )}
+
+        {gameState === GAME_STATES.ROUND_RESULT && currentVenue && (
+          <div className="kiosk-result-screen pointer-events-auto bg-hb-bg flex flex-col" style={{ minHeight: '100dvh' }}>
+            <GameHeader round={currentRoundIndex + 1} totalRounds={shuffledVenues.length} />
+            <div className="kiosk-result-container flex-1 p-3 md:p-4">
+              <RoundResult
+                roundNumber={currentRoundIndex + 1}
+                venue={currentVenue}
+                guess={currentGuess}
+                distance={currentDistance}
+                score={currentScore}
+                onNext={handleNextRound}
+                isLastRound={isLastRound}
               />
             </div>
           </div>
-          <ArcadeMapControls
-            onZoom={handleZoom}
-            onReset={handleReset}
-            timerSeconds={gameSettings.roundSeconds}
-            timerActive={timerActive}
-            onTimerExpire={handleTimerExpire}
-            onTimerTick={setTimeRemaining}
-            roundIndex={currentRoundIndex}
-          />
-        </div>
-      )}
-
-      {gameState === GAME_STATES.ROUND_RESULT && currentVenue && (
-        <div className="kiosk-result-screen flex flex-col" style={{ minHeight: '100dvh' }}>
-          <GameHeader round={currentRoundIndex + 1} totalRounds={shuffledVenues.length} />
-          <div className="kiosk-result-container flex-1 p-3 md:p-4">
-            <RoundResult
-              roundNumber={currentRoundIndex + 1}
-              venue={currentVenue}
-              guess={currentGuess}
-              distance={currentDistance}
-              score={currentScore}
-              onNext={handleNextRound}
-              isLastRound={isLastRound}
-            />
-          </div>
-        </div>
-      )}
+        )}
+      </div>
+    );
+  };
+  const tourUrls = gameState === GAME_STATES.SPLASH
+    ? preparedTourUrls.slice(0, 2)
+    : [GAME_STATES.PLAYING, GAME_STATES.ROUND_RESULT].includes(gameState)
+      ? shuffledVenues.slice(currentRoundIndex, currentRoundIndex + 2).map(v => v.tourUrl)
+      : [];
+  return <>
+    <div style={{ position: 'fixed', top: 88, left: 0, right: 0, bottom: 0 }}>
+      {[...new Set(tourUrls)].map((url, index) => {
+        const active = gameState === GAME_STATES.PLAYING && index === 0;
+        return <div key={url} aria-hidden={!active} style={{ position: 'absolute', inset: 0, opacity: active ? 1 : 0, pointerEvents: active ? 'auto' : 'none' }}>
+          <MatterportViewer key={index === 0 ? viewerRetryKey : 0} tourUrl={url} active={active} onError={handleTourError} onLoaded={handleVenueLoaded} />
+        </div>;
+      })}
     </div>
-  );
+    <div style={{ position: 'relative' }}>{renderScreen()}</div>
+  </>;
 }
 
 function OfflineBanner({ isOnline }) {

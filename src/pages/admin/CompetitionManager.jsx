@@ -3,6 +3,9 @@ import { base44 } from '@/api/base44Client';
 import { Plus, Edit2, CheckCircle, Archive, RotateCcw } from 'lucide-react';
 
 const DEFAULT_FORM = {
+  map_latitude: 54.5,
+  map_longitude: -3.5,
+  map_zoom: 5,
   name: '',
   event_location: '',
   start_date: '',
@@ -22,9 +25,17 @@ function CompetitionForm({ initial = null, onSave, onCancel }) {
 
   const handleSave = async () => {
     if (!form.name.trim() || saving) return;
+    const mapFields = [['map_latitude', -85, 85], ['map_longitude', -180, 180], ['map_zoom', 1, 18]];
+    if (mapFields.some(([key, min, max]) => form[key] === '' || !Number.isFinite(Number(form[key])) || Number(form[key]) < Number(min) || Number(form[key]) > Number(max)) || !Number.isInteger(Number(form.map_zoom))) {
+      setError('Enter latitude from -85 to 85, longitude from -180 to 180, and a whole-number zoom from 1 to 18.');
+      return;
+    }
     setSaving(true);
     setError('');
     const payload = {
+      map_latitude: Number(form.map_latitude),
+      map_longitude: Number(form.map_longitude),
+      map_zoom: Number(form.map_zoom),
       name: form.name.trim(),
       event_location: form.event_location?.trim() || '',
       start_date: form.start_date || '',
@@ -77,6 +88,17 @@ function CompetitionForm({ initial = null, onSave, onCancel }) {
           </div>
         </label>
       </div>
+      <fieldset className="mt-5">
+        <legend className="text-white font-bold">Starting map view</legend>
+        <p className="text-[#aaa] text-sm my-2">Choose the centre for this competition. Reset map returns here. Zoom 2 shows the world, 5 a country, and 12 a city.</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {[['map_latitude', 'Centre latitude', -85, 85], ['map_longitude', 'Centre longitude', -180, 180], ['map_zoom', 'Starting zoom', 1, 18]].map(([key, label, min, max]) => (
+            <label key={key} className="text-[#aaa] text-xs font-semibold">{label}
+              <input type="number" min={min} max={max} step={key === 'map_zoom' ? 1 : 'any'} value={form[key] ?? DEFAULT_FORM[key]} onChange={e => set(key, e.target.value)} className="mt-1 w-full bg-[#222] border border-[#333] rounded-lg px-3 py-2 text-white text-sm" />
+            </label>
+          ))}
+        </div>
+      </fieldset>
       {error && <p className="text-red-400 text-xs mt-3" role="alert">{error}</p>}
       <div className="flex gap-2 mt-4">
         <button disabled={saving} onClick={handleSave} className="bg-[#AF231C] hover:bg-[#8C1C16] disabled:opacity-50 text-white text-sm font-bold px-4 py-2 rounded-lg transition-colors">{saving ? 'Saving…' : 'Save'}</button>

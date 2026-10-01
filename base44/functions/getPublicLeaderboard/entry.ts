@@ -11,6 +11,9 @@ const clamp = (value, fallback, min, max, integer = false) => {
 };
 
 const publicSettings = (competition) => ({
+  mapLatitude: clamp(competition?.map_latitude, 54.5, -85, 85),
+  mapLongitude: clamp(competition?.map_longitude, -3.5, -180, 180),
+  mapZoom: clamp(competition?.map_zoom, 5, 1, 18, true),
   icpMultiplier: clamp(competition?.icp_multiplier, 1.25, 1, 2),
   roundCount: clamp(competition?.round_count, 3, 1, 5, true),
   roundSeconds: clamp(competition?.round_seconds, 30, 15, 90, true),
