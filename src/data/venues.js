@@ -89,15 +89,18 @@ const EMBED_PARAMS = 'play=1&qs=1&dh=0&mls=2&gt=0&hr=0&measurements=0&mt=0&brand
 export function getEmbedUrl(url) {
   if (!url) return null;
 
-  if (url.includes('my.matterport.com/show/')) {
-    // Strip any existing params we're overriding, then append ours
-    const base = url.split('?')[0];
-    const existing = new URLSearchParams(url.includes('?') ? url.split('?')[1] : '');
-    const ours = new URLSearchParams(EMBED_PARAMS);
-    // Preserve m= (model ID) from original URL
-    const m = existing.get('m');
-    if (m) ours.set('m', m);
-    return `${base}?${ours.toString()}`;
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname === 'my.matterport.com' && /^\/show\/?$/.test(parsed.pathname)) {
+      parsed.pathname = '/show/';
+      // Keep the chosen starting sweep and camera direction while applying quickstart.
+      new URLSearchParams(EMBED_PARAMS).forEach((value, key) => {
+        parsed.searchParams.set(key, value);
+      });
+      return parsed.toString();
+    }
+  } catch (_) {
+    return null;
   }
 
   if (url.includes('tours.headbox.com/model/')) {
