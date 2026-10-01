@@ -641,7 +641,7 @@ export default function Game() {
         </div>;
       })}
     </div>
-    <div style={{ position: 'relative' }}>{renderScreen()}</div>
+    <div style={{ position: 'relative', pointerEvents: gameState === GAME_STATES.PLAYING ? 'none' : 'auto' }}>{renderScreen()}</div>
   </>;
 }
 
