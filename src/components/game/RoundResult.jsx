@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Polyline, useMap } from 'react-leaflet';
+import { MapContainer, Marker, Polyline } from 'react-leaflet';
 import L from 'leaflet';
+import CartoTiles from './CartoTiles';
 import { getRating } from '@/utils/scoring';
 
 const createPinIcon = (colour) => new L.DivIcon({
@@ -12,19 +13,6 @@ const createPinIcon = (colour) => new L.DivIcon({
 
 const redIcon = createPinIcon('#AF231C');
 const greyIcon = createPinIcon('#94a3b8');
-
-function FitBounds({ guess, actual }) {
-  const map = useMap();
-  useEffect(() => {
-    if (guess && actual) {
-      const bounds = L.latLngBounds([guess, actual]);
-      map.fitBounds(bounds, { padding: [60, 60] });
-    } else if (actual) {
-      map.setView(actual, 5);
-    }
-  }, [guess, actual, map]);
-  return null;
-}
 
 function AnimatedScore({ target }) {
   const [displayed, setDisplayed] = useState(0);
@@ -58,13 +46,17 @@ export default function RoundResult({ roundNumber, venue, guess, distance, score
       {/* Full-width map */}
       <div className="kiosk-round-result-map w-full rounded-hb-lg overflow-hidden border border-hb-border">
         <MapContainer
+          bounds={guessPos ? L.latLngBounds([guessPos, actualPos]) : undefined}
+          boundsOptions={{ padding: [60, 60], maxZoom: 16 }}
           center={actualPos}
           zoom={4}
+          minZoom={1}
+          maxZoom={18}
           style={{ width: '100%', height: '100%' }}
           zoomControl={true}
           attributionControl={false}
         >
-          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="" />
+          <CartoTiles />
           <Marker position={actualPos} icon={redIcon} />
           {guessPos && (
             <>
@@ -77,7 +69,6 @@ export default function RoundResult({ roundNumber, venue, guess, distance, score
               />
             </>
           )}
-          <FitBounds guess={guessPos} actual={actualPos} />
         </MapContainer>
       </div>
 

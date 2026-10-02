@@ -17,7 +17,7 @@ import {
 
 import SplashScreen from '@/components/game/SplashScreen/SplashScreen';
 import GameHeader from '@/components/game/GameHeader';
-import MatterportViewer from '@/components/game/MatterportViewer';
+import TourDeck from '@/components/game/TourDeck';
 import ArcadeMapControls from '@/components/game/ArcadeMapControls';
 import GameSummary from '@/components/game/GameSummary';
 import PreRoundCountdown from '@/components/game/PreRoundCountdown';
@@ -633,14 +633,7 @@ export default function Game() {
       ? shuffledVenues.slice(currentRoundIndex, currentRoundIndex + 2).map(v => v.tourUrl)
       : [];
   return <>
-    <div style={{ position: 'fixed', top: 88, left: 0, right: 0, bottom: 0 }}>
-      {[...new Set(tourUrls)].map((url, index) => {
-        const active = gameState === GAME_STATES.PLAYING && index === 0;
-        return <div key={url} aria-hidden={!active} style={{ position: 'absolute', inset: 0, opacity: active ? 1 : 0, pointerEvents: active ? 'auto' : 'none' }}>
-          <MatterportViewer key={index === 0 ? viewerRetryKey : 0} tourUrl={url} active={active} onError={handleTourError} onLoaded={handleVenueLoaded} />
-        </div>;
-      })}
-    </div>
+    <TourDeck tourUrls={tourUrls} playing={gameState === GAME_STATES.PLAYING} retryKey={viewerRetryKey} onError={handleTourError} onLoaded={handleVenueLoaded} />
     <div style={{ position: 'relative', pointerEvents: gameState === GAME_STATES.PLAYING ? 'none' : 'auto' }}>{renderScreen()}</div>
   </>;
 }
