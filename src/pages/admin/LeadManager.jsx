@@ -9,6 +9,17 @@ export default function LeadManager() {
   const [leads, setLeads] = useState([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
+  const [hubspotBusy, setHubspotBusy] = useState('');
+  const [hubspotError, setHubspotError] = useState('');
+  const syncHubspot = async (lead) => {
+    setHubspotBusy(lead.id);
+    setHubspotError('');
+    try {
+      await base44.functions.invoke('syncHubspot', { lead_id: lead.id });
+      await load(selectedComp);
+    } catch (_) { setHubspotError('HubSpot could not be reached. The lead is saved; retry later.'); }
+    finally { setHubspotBusy(''); }
+  };
 
   const load = async (compId) => {
     setLoading(true);
@@ -66,6 +77,7 @@ export default function LeadManager() {
         </div>
       </div>
 
+      {hubspotError && <p role="alert" className="text-amber-400 text-sm mb-3">{hubspotError}</p>}
       <div className="flex gap-3 mb-4 flex-wrap">
         <select className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-white text-sm" value={selectedComp} onChange={e => { setSelectedComp(e.target.value); load(e.target.value); }}>
           <option value="">All competitions</option>
@@ -81,14 +93,14 @@ export default function LeadManager() {
         <table className="w-full text-sm min-w-[640px]">
           <thead>
             <tr className="border-b border-[#2a2a2a]">
-              {['Name', 'Email', 'Company', 'Score', 'Mailjet', 'Date', ''].map(h => (
+              {['Name', 'Email', 'Company', 'Score', 'Mailjet', 'HubSpot', 'Date', ''].map(h => (
                 <th key={h} className="text-left px-4 py-3 text-[#666] font-semibold text-xs uppercase tracking-wider">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 && (
-              <tr><td colSpan={7} className="text-center py-12 text-[#555]">{loading ? 'Loading...' : 'No leads found'}</td></tr>
+              <tr><td colSpan={8} className="text-center py-12 text-[#555]">{loading ? 'Loading...' : 'No leads found'}</td></tr>
             )}
             {filtered.map(lead => (
               <tr key={lead.id} className="border-b border-[#2a2a2a] last:border-0 hover:bg-[#222] transition-colors">
@@ -100,6 +112,10 @@ export default function LeadManager() {
                   {lead.mailjet_synced
                     ? <span className="flex items-center gap-1 text-green-400 text-xs"><CheckCircle size={12} /> Synced</span>
                     : <button onClick={() => syncMailjet(lead)} className="flex items-center gap-1 text-xs text-[#888] hover:text-white border border-[#333] px-2 py-1 rounded transition-colors"><XCircle size={12} /> Sync</button>}
+                </td>
+                <td className="px-4 py-3 text-xs text-[#aaa]">
+                  {lead.hubspot_status === 'synced' ? 'Synced' : lead.hubspot_status ? <button disabled={Boolean(hubspotBusy)} onClick={() => syncHubspot(lead)} className="border border-[#333] px-2 py-1 rounded">{hubspotBusy === lead.id ? 'Syncing…' : 'Retry HubSpot'}</button> : 'Not queued'}
+                  {lead.hubspot_error && <p className="text-amber-400 max-w-60 mt-1">{lead.hubspot_error}</p>}
                 </td>
                 <td className="px-4 py-3 text-[#666] text-xs">{lead.created_date?.split('T')[0]}</td>
                 <td className="px-4 py-3" />
