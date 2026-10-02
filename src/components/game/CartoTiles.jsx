@@ -41,7 +41,7 @@ export default function CartoTiles() {
       },
     });
     const layer = new Layer();
-    L.setOptions(layer, { minZoom: 1, maxZoom: 18, updateWhenIdle: true });
+    L.setOptions(layer, { minZoom: 1, maxZoom: 18, updateWhenIdle: true, updateWhenZooming: false, keepBuffer: 1 });
     layer.on('tileunload', ({ tile }) => {
       pending.get(tile)?.abort();
       pending.delete(tile);

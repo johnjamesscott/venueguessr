@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { getEmbedUrl } from '@/data/venues';
 
-export default function MatterportViewer({ tourUrl, active = true, onError, onLoaded, loadTimeoutMs = 30_000 }) {
+export default function MatterportViewer({ tourUrl, active = true, onError, onLoaded, onPrepared = undefined, loadTimeoutMs = 30_000 }) {
   const embedUrl = getEmbedUrl(tourUrl);
 
   let trustedMessageOrigin = null;
@@ -39,6 +39,10 @@ export default function MatterportViewer({ tourUrl, active = true, onError, onLo
     if (errored) onError?.();
     else if (loaded) onLoaded?.();
   }, [active, errored, loaded, onError, onLoaded]);
+
+  useEffect(() => {
+    if (loaded && !errored) onPrepared?.();
+  }, [loaded, errored, onPrepared]);
 
   // Reset error state when tourUrl changes
   useEffect(() => {
