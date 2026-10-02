@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import ts from 'typescript';
-import { PROPERTY, competitionLabel, segmentBody, mergeOptions, contactProperties, noteBody, makeHubspotClient, syncPlay, syncCompetition, HubspotError } from '../base44/functions/syncHubspot/hubspot.js';
+import { PROPERTY, noteTimestamp, competitionLabel, segmentBody, mergeOptions, contactProperties, noteBody, makeHubspotClient, syncPlay, syncCompetition, HubspotError } from '../base44/functions/syncHubspot/hubspot.js';
 const comp = { id: 'c1', name: 'Confex', start_date: '2027-02-24', hubspot_enabled: true };
 const play = { id: 'play1', total_score: 200, round_results: [{ venue_name: '<img src=x>', city: 'London', score: 100, distance_km: 1.5 }], completed_at: '2027-02-24T12:00:00Z' };
 const lead = { id: 'l1', competition_id: 'c1', email: 'person@example.test', first_name: 'Person', last_name: 'Test', company: 'Example', hubspot_status: 'pending' };
@@ -125,4 +125,10 @@ test('a worker re-reads the lead after taking the lock and skips a completed pla
   } } };
   assert.deepEqual(await (await handler(request({ lead_id: 'l1' }))).json(), { status: 'synced' });
   assert.equal(reads, 2);
+});
+
+test('legacy Base44 timestamps become valid UTC note timestamps', () => {
+  assert.equal(noteTimestamp({ created_date: '2026-10-01T16:36:21.550000' }), '2026-10-01T16:36:21.550Z');
+  assert.equal(noteTimestamp({ completed_at: '2026-10-01T17:36:21+01:00' }), '2026-10-01T16:36:21.000Z');
+  assert.throws(() => noteTimestamp({}), /unavailable/);
 });
