@@ -131,14 +131,21 @@ Deno.serve(async (req) => {
       : [];
     const position = sortedEntries.findIndex((candidate) => candidate.id === entry.id) + 1;
 
+    if (competition?.hubspot_enabled && !lead.hubspot_status) {
+      await base44.asServiceRole.entities.Lead.update(lead.id, { hubspot_status: 'pending' });
+    }
     await base44.asServiceRole.entities.PendingSubmission.update(submission.id, {
       status: 'completed',
+      completed_at: new Date().toISOString(),
       lead_id: lead.id,
       leaderboard_entry_id: entry.id,
       // The one-way kiosk fingerprint is needed only for anonymous burst control.
       request_fingerprint: '',
     });
 
+    if (competition?.hubspot_enabled) {
+      waitUntil(base44.asServiceRole.functions.invoke('syncHubspot', { submission_token: token }).catch(() => {}));
+    }
     // Provider calls run after the durable lead, score and completion state exist.
     waitUntil(base44.asServiceRole.functions.invoke('syncLeadToMailjet', { submission_token: token }));
     waitUntil(base44.asServiceRole.functions.invoke('sendPostGameEmail', { submission_token: token }));

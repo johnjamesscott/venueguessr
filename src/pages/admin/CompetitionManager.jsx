@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Plus, Edit2, CheckCircle, Archive, RotateCcw } from 'lucide-react';
 
 const DEFAULT_FORM = {
+  hubspot_enabled: true,
   map_latitude: 54.5,
   map_longitude: -3.5,
   map_zoom: 5,
@@ -18,7 +19,7 @@ const DEFAULT_FORM = {
 };
 
 function CompetitionForm({ initial = null, onSave, onCancel }) {
-  const [form, setForm] = useState(() => ({ ...DEFAULT_FORM, ...(initial || {}) }));
+  const [form, setForm] = useState(() => ({ ...DEFAULT_FORM, ...(initial || {}), hubspot_enabled: initial ? initial.hubspot_enabled === true : true }));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
@@ -30,9 +31,15 @@ function CompetitionForm({ initial = null, onSave, onCancel }) {
       setError('Enter latitude from -85 to 85, longitude from -180 to 180, and a whole-number zoom from 1 to 18.');
       return;
     }
+    if (form.hubspot_enabled && !form.start_date) {
+      setError('Add a start date for the HubSpot segment name.');
+      return;
+    }
     setSaving(true);
     setError('');
     const payload = {
+      hubspot_enabled: form.hubspot_enabled,
+      ...(form.hubspot_enabled ? { hubspot_status: 'pending', hubspot_error: '', hubspot_next_retry: '' } : {}),
       map_latitude: Number(form.map_latitude),
       map_longitude: Number(form.map_longitude),
       map_zoom: Number(form.map_zoom),
@@ -47,10 +54,12 @@ function CompetitionForm({ initial = null, onSave, onCancel }) {
       kiosk_idle_seconds: Math.min(300, Math.max(30, Math.round(Number(form.kiosk_idle_seconds) || 90))),
     };
     try {
-      if (initial?.id) {
-        await base44.entities.Competition.update(initial.id, payload);
-      } else {
-        await base44.entities.Competition.create({ ...payload, active: false, archived: false });
+      const saved = initial?.id
+        ? await base44.entities.Competition.update(initial.id, payload)
+        : await base44.entities.Competition.create({ ...payload, active: false, archived: false });
+      if (form.hubspot_enabled) {
+        // The record is already saved. Provider failures stay queued for retry.
+        await base44.functions.invoke('syncHubspot', { competition_id: saved.id }).catch(() => {});
       }
       onSave();
     } catch (_) {
@@ -65,8 +74,8 @@ function CompetitionForm({ initial = null, onSave, onCancel }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <input className="bg-[#222] border border-[#333] rounded-lg px-3 py-2 text-white text-sm" placeholder="Competition name *" value={form.name} onChange={e => set('name', e.target.value)} />
         <input className="bg-[#222] border border-[#333] rounded-lg px-3 py-2 text-white text-sm" placeholder="Event location" value={form.event_location} onChange={e => set('event_location', e.target.value)} />
-        <input type="date" className="bg-[#222] border border-[#333] rounded-lg px-3 py-2 text-white text-sm" value={form.start_date} onChange={e => set('start_date', e.target.value)} />
-        <input type="date" className="bg-[#222] border border-[#333] rounded-lg px-3 py-2 text-white text-sm" value={form.end_date} onChange={e => set('end_date', e.target.value)} />
+        <input aria-label="Competition start date" type="date" className="bg-[#222] border border-[#333] rounded-lg px-3 py-2 text-white text-sm" value={form.start_date} onChange={e => set('start_date', e.target.value)} />
+        <input aria-label="Competition end date" type="date" className="bg-[#222] border border-[#333] rounded-lg px-3 py-2 text-white text-sm" value={form.end_date} onChange={e => set('end_date', e.target.value)} />
         <textarea className="bg-[#222] border border-[#333] rounded-lg px-3 py-2 text-white text-sm md:col-span-2" placeholder="Description" rows={2} value={form.description} onChange={e => set('description', e.target.value)} />
         <label className="text-[#aaa] text-xs font-semibold">
           ICP multiplier
@@ -88,6 +97,11 @@ function CompetitionForm({ initial = null, onSave, onCancel }) {
           </div>
         </label>
       </div>
+      <label className="flex gap-2 items-center text-sm text-white mt-4">
+        <input type="checkbox" checked={form.hubspot_enabled} onChange={e => set('hubspot_enabled', e.target.checked)} />
+        Sync new participants to HubSpot and create a competition segment
+      </label>
+      <p className="text-xs text-[#888] mt-2">Segment name: VenueGuessr — competition name — start date (dd/mm/yy). Turn off for test competitions.</p>
       <fieldset className="mt-5">
         <legend className="text-white font-bold">Starting map view</legend>
         <p className="text-[#aaa] text-sm my-2">Choose the centre for this competition. Reset map returns here. Zoom 2 shows the world, 5 a country, and 12 a city.</p>
@@ -116,6 +130,14 @@ export default function CompetitionManager() {
   const [loading, setLoading] = useState(true);
   const [managerError, setManagerError] = useState('');
   const [busyId, setBusyId] = useState(null);
+  const [connection, setConnection] = useState('');
+  const checkConnection = async () => {
+    setConnection('Checking…');
+    try {
+      const result = await base44.functions.invoke('syncHubspot', { check_only: true });
+      setConnection(result.data.message || 'Connected');
+    } catch (error) { setConnection(error?.response?.data?.error || 'Could not connect to HubSpot. Check the secret and scopes.'); }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -130,7 +152,13 @@ export default function CompetitionManager() {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+    const retry = () => base44.functions.invoke('syncHubspot', {}).then(() => load()).catch(() => {});
+    retry();
+    const timer = setInterval(retry, 60000);
+    return () => clearInterval(timer);
+  }, [load]);
 
   const runAction = async (id, action) => {
     if (busyId) return;
@@ -171,6 +199,7 @@ export default function CompetitionManager() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-black text-white">Competitions</h1>
         <div className="flex gap-2">
+          <button onClick={checkConnection} className="text-sm text-[#aaa] border border-[#333] px-3 py-1.5 rounded-lg">Check HubSpot</button>
           <button onClick={() => setShowArchived(p => !p)} className="text-sm text-[#888] hover:text-white border border-[#333] px-3 py-1.5 rounded-lg transition-colors">
             {showArchived ? 'Show Active' : 'Show Archived'}
           </button>
@@ -180,6 +209,7 @@ export default function CompetitionManager() {
         </div>
       </div>
 
+      {connection && <p role="status" className="text-sm text-[#aaa] mb-3">{connection}</p>}
       {showForm && !editing && (
         <CompetitionForm onSave={() => { setShowForm(false); load(); }} onCancel={() => setShowForm(false)} />
       )}
@@ -210,6 +240,7 @@ export default function CompetitionManager() {
                   {(comp.start_date || comp.end_date) && (
                     <div className="text-[#666] text-xs mt-0.5">{comp.start_date} → {comp.end_date}</div>
                   )}
+                  <div className="text-xs text-[#aaa] mt-2">HubSpot: {comp.hubspot_enabled ? (comp.hubspot_status === 'synced' ? 'Segment ready' : 'Waiting to sync') : 'Off'}{comp.hubspot_error && <p role="alert" className="text-amber-400">{comp.hubspot_error}</p>}</div>
                   {comp.description && <div className="text-[#777] text-xs mt-1">{comp.description}</div>}
                   <div className="text-[#666] text-xs mt-2 flex flex-wrap gap-x-3 gap-y-1">
                     <span>{Number(comp.icp_multiplier) || 1.25}x ICP</span>
@@ -219,6 +250,7 @@ export default function CompetitionManager() {
                   </div>
                 </div>
                 <div className="flex gap-2 flex-wrap">
+                  {comp.hubspot_enabled && <button disabled={Boolean(busyId)} onClick={() => runAction(comp.id, () => base44.functions.invoke('syncHubspot', { competition_id: comp.id }))} className="text-xs text-[#aaa] border border-[#333] px-3 py-1.5 rounded-lg">Retry HubSpot</button>}
                   {!comp.active && !comp.archived && (
                     <button disabled={Boolean(busyId)} onClick={() => activate(comp)} className="flex items-center gap-1.5 text-xs bg-green-500/10 hover:bg-green-500/20 disabled:opacity-50 text-green-400 border border-green-500/20 px-3 py-1.5 rounded-lg transition-colors">
                       <CheckCircle size={12} /> {busyId === comp.id ? 'Saving…' : 'Activate'}

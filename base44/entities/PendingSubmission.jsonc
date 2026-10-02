@@ -70,6 +70,10 @@
     "request_fingerprint": {
       "type": "string",
       "description": "Privacy-safe hash used only for anonymous submission rate limiting"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
     }
   },
   "required": [

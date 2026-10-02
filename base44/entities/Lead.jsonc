@@ -32,6 +32,37 @@
       "type": "boolean",
       "default": false,
       "description": "True if this lead received the ICP score boost"
+    },
+    "hubspot_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "retry",
+        "synced"
+      ]
+    },
+    "hubspot_error": {
+      "type": "string"
+    },
+    "hubspot_next_retry": {
+      "type": "string"
+    },
+    "hubspot_attempts": {
+      "type": "integer"
+    },
+    "hubspot_contact_id": {
+      "type": "string"
+    },
+    "hubspot_note_id": {
+      "type": "string"
+    },
+    "hubspot_note_state": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "creating",
+        "created"
+      ]
     }
   },
   "required": [
