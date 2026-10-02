@@ -33,6 +33,13 @@ export function contactProperties(lead, competition, existing = null) {
   return properties;
 }
 const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+export function noteTimestamp(submission) {
+  const raw = submission.completed_at || submission.created_date;
+  const normalized = /(?:Z|[+-]\d{2}:\d{2})$/.test(raw || '') ? raw : `${raw}Z`;
+  const timestamp = Date.parse(normalized);
+  if (!Number.isFinite(timestamp)) throw new Error('Game timestamp is unavailable.');
+  return new Date(timestamp).toISOString();
+}
 export const noteMarker = submission => `VenueGuessr play: ${submission.id}`;
 export function noteBody(submission, competition) {
   const rounds = (submission.round_results || []).slice(0, 5).map((round, index) =>
@@ -138,7 +145,7 @@ export async function syncPlay(api, entities, lead, submission, competition) {
   let note;
   try {
     note = await api('/crm/v3/objects/notes', 'POST', {
-      properties: { hs_timestamp: submission.completed_at || submission.created_date, hs_note_body: noteBody(submission, competition) },
+      properties: { hs_timestamp: noteTimestamp(submission), hs_note_body: noteBody(submission, competition) },
       associations: [{ to: { id: contact.id }, types: [{ associationCategory: 'HUBSPOT_DEFINED', associationTypeId: 202 }] }],
     });
   } catch (error) {
