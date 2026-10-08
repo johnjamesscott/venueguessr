@@ -83,14 +83,14 @@ export default function GuessMap({
 
       {/* Bottom bar: tap hint or lock-in button */}
       {!guessLocked && (
-        <div style={{ position: 'absolute', bottom: 12, left: 12, right: 12, zIndex: 1000 }}>
+        <div style={{ position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)', width: 'calc(100% - 24px)', maxWidth: 320, zIndex: 1000 }}>
           {!markerPos ? (
             /* Tap to place pin — info pill, not clickable */
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
               background: 'rgba(255,255,255,0.97)', color: '#333',
-              fontFamily: 'Montserrat, sans-serif', fontWeight: 700, fontSize: 18,
-              padding: '18px 20px', borderRadius: 50,
+              fontFamily: 'Montserrat, sans-serif', fontWeight: 700, fontSize: 14,
+              minHeight: 44, padding: '10px 16px', borderRadius: 50,
               boxShadow: '0 4px 16px rgba(0,0,0,0.2)', border: '1px solid #e0e0e0',
               pointerEvents: 'none',
             }}>
@@ -108,8 +108,8 @@ export default function GuessMap({
                 width: '100%',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
                 background: '#AF231C', color: '#fff',
-                fontFamily: 'Montserrat, sans-serif', fontWeight: 700, fontSize: 18,
-                padding: '18px 20px', borderRadius: 50, border: 'none',
+                fontFamily: 'Montserrat, sans-serif', fontWeight: 700, fontSize: 14,
+                minHeight: 44, padding: '10px 16px', borderRadius: 50, border: 'none',
                 boxShadow: '0 4px 0 rgba(0,0,0,0.3), 0 6px 16px rgba(175,35,28,0.4)',
                 cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.5px',
                 WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation',

@@ -1,16 +1,17 @@
 import React from 'react';
 import CountdownTimer from './CountdownTimer';
 
-function GBBtn({ size = 44, fontSize = 18, onClick, onMouseEnter, onMouseLeave, children }) {
+function GBBtn({ size = 44, fontSize = 18, onClick, label, children }) {
   const [pressed, setPressed] = React.useState(false);
   return (
     <button
-      onPointerDown={() => { setPressed(true); onClick?.(); }}
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      onPointerDown={() => setPressed(true)}
       onPointerUp={() => setPressed(false)}
       onPointerCancel={() => setPressed(false)}
-      onPointerLeave={() => { setPressed(false); onMouseLeave?.(); }}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
+      onPointerLeave={() => setPressed(false)}
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -41,22 +42,10 @@ function GBBtn({ size = 44, fontSize = 18, onClick, onMouseEnter, onMouseLeave, 
   );
 }
 
-const TIMER_SIZE = 240;
+const TIMER_SIZE = 144;
 
 export default function ArcadeMapControls({ onZoom, timerSeconds, timerActive, onTimerExpire, onTimerTick, roundIndex, onReset }) {
   const [resetPressed, setResetPressed] = React.useState(false);
-  const [zoomInTip, setZoomInTip] = React.useState(false);
-  const [zoomOutTip, setZoomOutTip] = React.useState(false);
-  const [zoomUsed, setZoomUsed] = React.useState(false);
-
-  // Show persistent hints on round 1 until zoom is used
-  const showHints = roundIndex === 0 && !zoomUsed;
-
-  const handleZoom = (dir) => {
-    setZoomUsed(true);
-    onZoom(dir);
-  };
-
   return (
     <div style={{ position: 'absolute', bottom: 0, left: '1em', right: '1em', height: '40vh', pointerEvents: 'none', zIndex: 20 }}>
 
@@ -66,7 +55,7 @@ export default function ArcadeMapControls({ onZoom, timerSeconds, timerActive, o
         top: 0,
         left: '50%',
         transform: 'translate(-50%, -50%)',
-        pointerEvents: 'auto',
+        pointerEvents: 'none',
         zIndex: 22,
       }}>
         <div style={{
@@ -90,9 +79,10 @@ export default function ArcadeMapControls({ onZoom, timerSeconds, timerActive, o
       </div>
 
       {/* Reset map — pill button, top left */}
-      <div style={{ position: 'absolute', top: 20, left: 16, pointerEvents: 'auto' }}>
+      <div style={{ position: 'absolute', top: 16, left: 16, pointerEvents: 'auto' }}>
         <button
-          onPointerDown={() => { setResetPressed(true); onReset?.(); }}
+          onClick={onReset}
+          onPointerDown={() => setResetPressed(true)}
           onPointerUp={() => setResetPressed(false)}
           onPointerCancel={() => setResetPressed(false)}
           onPointerLeave={() => setResetPressed(false)}
@@ -101,10 +91,11 @@ export default function ArcadeMapControls({ onZoom, timerSeconds, timerActive, o
             color: '#fff',
             border: 'none',
             borderRadius: 50,
-            padding: '18px 32px',
+            minHeight: 44,
+            padding: '10px 14px',
             fontFamily: 'Montserrat, sans-serif',
             fontWeight: 700,
-            fontSize: 26,
+            fontSize: 14,
             cursor: 'pointer',
             userSelect: 'none',
             WebkitTapHighlightColor: 'transparent',
@@ -120,50 +111,13 @@ export default function ArcadeMapControls({ onZoom, timerSeconds, timerActive, o
         </button>
       </div>
 
-      {/* Zoom buttons — top right with tooltips */}
+      {/* Compact fallback controls; drag and pinch remain available on the map. */}
       <div style={{
-        position: 'absolute',
-        top: 20,
-        right: 16,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 10,
-        pointerEvents: 'auto',
+        position: 'absolute', top: 16, right: 16,
+        display: 'flex', flexDirection: 'column', gap: 6, pointerEvents: 'auto',
       }}>
-        {/* Zoom In */}
-        <div style={{ position: 'relative' }}>
-          {(showHints || zoomInTip) && (
-            <div style={{
-              position: 'absolute', right: 100, top: '50%', transform: 'translateY(-50%)',
-              background: 'rgba(0,0,0,0.85)', color: '#fff', borderRadius: 8,
-              padding: '6px 12px', fontSize: 20, fontWeight: 600, whiteSpace: 'nowrap',
-              pointerEvents: 'none',
-              animation: showHints && !zoomInTip ? 'hintPulse 2s ease-in-out infinite' : 'none',
-            }}>Zoom In</div>
-          )}
-          <GBBtn size={88} fontSize={52} onClick={() => handleZoom('in')}
-            onMouseEnter={() => setZoomInTip(true)} onMouseLeave={() => setZoomInTip(false)}>+</GBBtn>
-        </div>
-        {/* Zoom Out */}
-        <div style={{ position: 'relative' }}>
-          {(showHints || zoomOutTip) && (
-            <div style={{
-              position: 'absolute', right: 100, top: '50%', transform: 'translateY(-50%)',
-              background: 'rgba(0,0,0,0.85)', color: '#fff', borderRadius: 8,
-              padding: '6px 12px', fontSize: 20, fontWeight: 600, whiteSpace: 'nowrap',
-              pointerEvents: 'none',
-              animation: showHints && !zoomOutTip ? 'hintPulse 2s ease-in-out infinite' : 'none',
-            }}>Zoom Out</div>
-          )}
-          <GBBtn size={88} fontSize={52} onClick={() => handleZoom('out')}
-            onMouseEnter={() => setZoomOutTip(true)} onMouseLeave={() => setZoomOutTip(false)}>−</GBBtn>
-        </div>
-        <style>{`
-          @keyframes hintPulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
-          }
-        `}</style>
+        <GBBtn size={44} fontSize={28} label="Zoom in" onClick={() => onZoom('in')}>+</GBBtn>
+        <GBBtn size={44} fontSize={28} label="Zoom out" onClick={() => onZoom('out')}>−</GBBtn>
       </div>
 
     </div>
