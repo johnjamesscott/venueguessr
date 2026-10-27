@@ -57,6 +57,11 @@
       "maximum": 300,
       "description": "Seconds without interaction before the kiosk resets"
     },
+    "tour_preloading": {
+      "type": "boolean",
+      "default": false,
+      "description": "Load tours in the background. Leave off for lower-powered kiosks."
+    },
     "map_latitude": {
       "type": "number",
       "default": 54.5,

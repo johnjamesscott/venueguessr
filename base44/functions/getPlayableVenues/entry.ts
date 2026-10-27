@@ -11,6 +11,7 @@ const clamp = (value, fallback, min, max, integer = false) => {
 };
 
 const getSettings = (competition) => ({
+  tourPreloading: competition?.tour_preloading === true,
   mapLatitude: clamp(competition?.map_latitude, 54.5, -85, 85),
   mapLongitude: clamp(competition?.map_longitude, -3.5, -180, 180),
   mapZoom: clamp(competition?.map_zoom, 5, 1, 18, true),

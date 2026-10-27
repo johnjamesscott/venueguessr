@@ -2,6 +2,7 @@ export const DEFAULT_GAME_SETTINGS = Object.freeze({
   mapLatitude: 54.5,
   mapLongitude: -3.5,
   mapZoom: 5,
+  tourPreloading: false,
   icpMultiplier: 1.25,
   roundCount: 3,
   roundSeconds: 30,
@@ -19,6 +20,7 @@ const clamp = (value, fallback, min, max, integer = false) => {
 export function normalizeGameSettings(value = {}) {
   const source = value?.settings || value || {};
   return {
+    tourPreloading: (source.tourPreloading ?? source.tour_preloading) === true,
     mapLatitude: clamp(source.mapLatitude ?? source.map_latitude, 54.5, -85, 85),
     mapLongitude: clamp(source.mapLongitude ?? source.map_longitude, -3.5, -180, 180),
     mapZoom: clamp(source.mapZoom ?? source.map_zoom, 5, 1, 18, true),

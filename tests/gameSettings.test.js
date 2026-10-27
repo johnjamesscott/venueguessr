@@ -55,3 +55,11 @@ test('competition map settings preserve zero and clamp invalid bounds', () => {
   assert.equal(bounded.mapLongitude, 180);
   assert.equal(bounded.mapZoom, 18);
 });
+
+test('tour preloading requires explicit boolean opt-in', () => {
+  for (const value of [undefined, null, false, 'false', 'true', 1]) {
+    assert.equal(normalizeGameSettings({ tour_preloading: value }).tourPreloading, false);
+  }
+  assert.equal(normalizeGameSettings({ tour_preloading: true }).tourPreloading, true);
+  assert.equal(normalizeGameSettings({ settings: { tourPreloading: true } }).tourPreloading, true);
+});
