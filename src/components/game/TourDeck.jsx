@@ -1,23 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import MatterportViewer from './MatterportViewer';
+import { selectMountedTours } from '@/utils/tourPreload';
 import { tourLookaheadDelay } from '@/utils/networkQueue';
 
 // Keep each prepared iframe in the same React slot when it becomes the active tour.
-export default function TourDeck({ tourUrls, playing, retryKey, onError, onLoaded }) {
+export default function TourDeck({ tourUrls, playing, retryKey, onError, onLoaded, preloading = false }) {
   const current = tourUrls[0];
   const next = tourUrls[1];
   const [prepared, setPrepared] = useState(null);
   const [lookahead, setLookahead] = useState(null);
   useEffect(() => {
-    if (!current || prepared !== current || !next) return;
+    if (!preloading || !current || prepared !== current || !next) return;
     const connection = /** @type {Navigator & { connection?: { saveData?: boolean, effectiveType?: string } }} */ (navigator).connection;
     const delay = tourLookaheadDelay(connection, navigator.onLine);
     if (delay === null) return;
     const timer = window.setTimeout(() => setLookahead(next), delay);
     return () => window.clearTimeout(timer);
-  }, [current, next, prepared]);
+  }, [current, next, prepared, preloading]);
   // The active frame always loads, even when speculative loading is disabled.
-  const urls = [...new Set([current, next === lookahead ? next : null].filter(Boolean))];
+  const urls = selectMountedTours(current, next, lookahead, playing, preloading);
   return <div style={{ position: 'fixed', top: 88, left: 0, right: 0, bottom: 0 }}>
     {urls.map((url, index) => {
       const active = playing && index === 0;

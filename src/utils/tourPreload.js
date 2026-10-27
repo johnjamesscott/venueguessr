@@ -11,3 +11,9 @@ export function createTourPreloadQueue(venues, roundCount) {
     return queue;
   }, []);
 }
+
+// With preloading off, never keep a hidden 3D renderer alive.
+export function selectMountedTours(current, next, lookahead, playing, preloading = false) {
+  if (!preloading) return playing && current ? [current] : [];
+  return [...new Set([current, next === lookahead ? next : null].filter(Boolean))];
+}

@@ -80,7 +80,7 @@ export default function Game() {
   const [venuePool, setVenuePool] = useState([]);
   const [icpBoostArmed, setIcpBoostArmed] = useState(false);
   const [gameIcpBoosted, setGameIcpBoosted] = useState(false);
-  const [gameSettings, setGameSettings] = useState(DEFAULT_GAME_SETTINGS);
+  const [gameSettings, setGameSettings] = useState(() => normalizeGameSettings());
   const [gameCompetitionId, setGameCompetitionId] = useState(null);
   const [gameSessionId, setGameSessionId] = useState(0);
   const [startMode, setStartMode] = useState(null);
@@ -186,7 +186,7 @@ export default function Game() {
       preparedGameResponseRef.current = null;
       setPreparedGameResponse(null);
     }
-  }, [activeSettings.mapLatitude, activeSettings.mapLongitude, activeSettings.mapZoom, activeSettings.icpMultiplier, activeSettings.kioskIdleSeconds, activeSettings.roundCount, activeSettings.roundSeconds]);
+  }, [activeSettings.tourPreloading, activeSettings.mapLatitude, activeSettings.mapLongitude, activeSettings.mapZoom, activeSettings.icpMultiplier, activeSettings.kioskIdleSeconds, activeSettings.roundCount, activeSettings.roundSeconds]);
 
   useKioskInactivity({
     timeoutSeconds: gameState === GAME_STATES.SPLASH
@@ -633,7 +633,7 @@ export default function Game() {
       ? shuffledVenues.slice(currentRoundIndex, currentRoundIndex + 2).map(v => v.tourUrl)
       : [];
   return <>
-    <TourDeck tourUrls={tourUrls} playing={gameState === GAME_STATES.PLAYING} retryKey={viewerRetryKey} onError={handleTourError} onLoaded={handleVenueLoaded} />
+    <TourDeck preloading={mapSettings.tourPreloading} tourUrls={tourUrls} playing={gameState === GAME_STATES.PLAYING} retryKey={viewerRetryKey} onError={handleTourError} onLoaded={handleVenueLoaded} />
     <div style={{ position: 'relative', pointerEvents: gameState === GAME_STATES.PLAYING ? 'none' : 'auto' }}>{renderScreen()}</div>
   </>;
 }

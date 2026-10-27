@@ -11,6 +11,7 @@ const clamp = (value, fallback, min, max, integer = false) => {
 };
 
 const getSettings = (competition) => ({
+  tourPreloading: competition?.tour_preloading === true,
   icpMultiplier: clamp(competition?.icp_multiplier, 1.25, 1, 2),
   roundCount: clamp(competition?.round_count, 3, 1, 5, true),
   roundSeconds: clamp(competition?.round_seconds, 30, 15, 90, true),

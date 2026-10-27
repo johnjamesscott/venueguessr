@@ -7,6 +7,7 @@ const DEFAULT_FORM = {
   map_latitude: 54.5,
   map_longitude: -3.5,
   map_zoom: 5,
+  tour_preloading: false,
   name: '',
   event_location: '',
   start_date: '',
@@ -43,6 +44,7 @@ function CompetitionForm({ initial = null, onSave, onCancel }) {
       map_latitude: Number(form.map_latitude),
       map_longitude: Number(form.map_longitude),
       map_zoom: Number(form.map_zoom),
+      tour_preloading: form.tour_preloading === true,
       name: form.name.trim(),
       event_location: form.event_location?.trim() || '',
       start_date: form.start_date || '',
@@ -102,6 +104,11 @@ function CompetitionForm({ initial = null, onSave, onCancel }) {
         Sync new participants to HubSpot and create a competition segment
       </label>
       <p className="text-xs text-[#888] mt-2">Segment name: VenueGuessr — competition name — start date (dd/mm/yy). Turn off for test competitions.</p>
+      <label className="flex gap-2 items-center text-sm text-white mt-4">
+        <input type="checkbox" checked={form.tour_preloading === true} onChange={e => set('tour_preloading', e.target.checked)} />
+        Pre-load tours in the background
+      </label>
+      <p className="text-xs text-[#888] mt-2">Off is recommended for the NUC kiosk: only the current tour loads. Enable for faster transitions on devices that handle multiple tours reliably. Refresh the kiosk after saving.</p>
       <fieldset className="mt-5">
         <legend className="text-white font-bold">Starting map view</legend>
         <p className="text-[#aaa] text-sm my-2">Choose the centre for this competition. Reset map returns here. Zoom 2 shows the world, 5 a country, and 12 a city.</p>
@@ -245,6 +252,7 @@ export default function CompetitionManager() {
                   <div className="text-[#666] text-xs mt-2 flex flex-wrap gap-x-3 gap-y-1">
                     <span>{Number(comp.icp_multiplier) || 1.25}x ICP</span>
                     <span>{Number(comp.round_count) || 3} rounds</span>
+                    <span>Tour pre-loading: {comp.tour_preloading === true ? 'On' : 'Off'}</span>
                     <span>{Number(comp.round_seconds) || 30}s per round</span>
                     <span>{Number(comp.kiosk_idle_seconds) || 90}s idle reset</span>
                   </div>
